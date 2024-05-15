@@ -8,9 +8,8 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import FSInputFile, Message
 from loguru import logger
 
-from analytics.types import EventType
 from config import settings
-from services import AnalyticsService, AssistantService, SttService, TtsService
+from services import AssistantService, SttService, TtsService
 from tg.states import ThreadIdState
 from utils import Strings
 
@@ -31,10 +30,6 @@ async def voice_message(message: Message, state: FSMContext):
     Returns:
     - None
     """
-
-    AnalyticsService.track_event(
-        user_id=message.from_user.id, event_type=EventType.VoiceMessageSent
-    )
 
     await message.answer(Strings.WAIT_MSG)
 

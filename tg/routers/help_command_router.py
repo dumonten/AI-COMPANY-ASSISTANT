@@ -2,8 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from analytics.types import EventType
-from services import AnalyticsService, AssistantService, TtsService
+from services import AssistantService, TtsService
 from utils import Strings
 
 router = Router()
@@ -20,9 +19,5 @@ async def cmd_help(message: Message):
     Returns:
     - None
     """
-
-    AnalyticsService.track_event(
-        user_id=message.from_user.id, event_type=EventType.HelpCommand
-    )
 
     await message.reply(Strings.HELP_MSG)

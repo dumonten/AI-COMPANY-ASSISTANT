@@ -4,4 +4,3 @@ from .image_router import router as image_router
 from .start_command_router import router as start_command_router
 from .text_message_router import router as text_message_router
 from .voice_message_router import router as voice_message_router
-from .get_sources_router import router as get_sources_router

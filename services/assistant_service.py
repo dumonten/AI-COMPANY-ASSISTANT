@@ -4,12 +4,8 @@ import os
 from loguru import logger
 from openai import AsyncOpenAI
 
-from analytics.types import EventType
 from repositories import UserRepository
 from utils import Strings
-
-from .analytics_service import AnalyticsService
-from .validate_service import ValidateService
 
 
 class AssistantService:
@@ -60,11 +56,13 @@ class AssistantService:
                 )
             )
 
+            """
             file_streams = [open(path, "rb") for path in self.file_paths]
 
             self.file_batch = await AssistantService.async_client.beta.vector_stores.file_batches.upload_and_poll(
                 vector_store_id=self.vector_store.id, files=file_streams
             )
+            """
 
             AssistantService.assistant = (
                 await AssistantService.async_client.beta.assistants.update(
@@ -75,6 +73,7 @@ class AssistantService:
                 )
             )
 
+            """
             if not (
                 self.file_batch.status == "completed"
                 and self.file_batch.file_counts.completed == len(self.file_paths)
@@ -82,6 +81,7 @@ class AssistantService:
                 raise ValueError(
                     f"Something went wrong when uploading files to vector storage with name: {self.name} in assistant."
                 )
+            """
 
     # A dictionary containing configuration options for the speech service, such as the model to use.
     config = {
