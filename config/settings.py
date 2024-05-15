@@ -14,12 +14,9 @@ class Settings(BaseSettings):
 
     BOT_KEY: str = Field(env="BOT_KEY")
     OPENAI_KEY: str = Field(env="OPENAI_KEY")
-    AMPLITUDE_KEY: str = Field(env="AMPLITUDE_KEY")
+    SER_KEY: str = Field(env="SER_KEY")
+    FIRE_CRAWL_KEY: str = Field(env="FIRE_CRAWL_KEY")
     DATABASE_URL: str = Field(env="DATABASE_URL")
-    REDISHOST: str = Field(env="REDISHOST")
-    REDISPASSWORD: str = Field(env="REDISPASSWORD")
-    REDISPORT: str = Field(env="REDISPORT")
-    REDISUSER: str = Field(env="REDISUSER")
 
     @property
     def bot(self) -> Bot:

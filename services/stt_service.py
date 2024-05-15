@@ -7,12 +7,12 @@ class SttService:
     """
 
     # A dictionary containing configuration options for the speech service, such as the model to use.
-    config = {
+    _config = {
         "model": "whisper-1",
     }
 
     # An OpenAI client for making requests to the speech service.
-    async_client = None
+    _async_client = None
 
     @classmethod
     def initialize(cls, async_client: AsyncOpenAI):
@@ -26,7 +26,7 @@ class SttService:
         - None
         """
 
-        cls.async_client = async_client
+        cls._async_client = async_client
 
     @classmethod
     async def speech_to_text(cls, path_to_file: str) -> str:
@@ -43,14 +43,14 @@ class SttService:
         - ValueError: If the async_client is not initialized before calling this method.
         """
 
-        if cls.async_client is None:
+        if cls._async_client is None:
             raise ValueError(
                 "async_client must be initialized before calling speech_to_text."
             )
 
         with open(path_to_file, "rb") as audio_file:
-            transcription = await cls.async_client.audio.transcriptions.create(
-                model=cls.config["model"], file=audio_file, response_format="text"
+            transcription = await cls._async_client.audio.transcriptions.create(
+                model=cls._config["model"], file=audio_file, response_format="text"
             )
 
         return transcription
