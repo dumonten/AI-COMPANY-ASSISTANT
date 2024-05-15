@@ -5,6 +5,7 @@ from aiogram import Bot
 from openai import AsyncOpenAI
 from pydantic import Field
 from pydantic_settings import BaseSettings
+from firecrawl import FirecrawlApp
 
 
 class Settings(BaseSettings):
@@ -55,6 +56,19 @@ class Settings(BaseSettings):
 
         if not hasattr(self, "_thread_executor"):
             self._thread_executor = ThreadPoolExecutor(max_workers=5)
+        return self._thread_executor
+
+    @property
+    def firecrawl_app(self) -> FirecrawlApp:
+        """
+        Returns a FirecrawlApp instance for web-site crawling.
+
+        Returns:
+        - FirecrawlApp: An instance of FirecrawlApp, initialized with the FIRE_CRAWL_KEY environment variable.
+        """
+
+        if not hasattr(self, "_firecrawl_app"):
+            self._firecrawl_app = FirecrawlApp(api_key=self.FIRE_CRAWL_KEY)
         return self._thread_executor
 
     class Config:
