@@ -1,29 +1,19 @@
 import json
-import os
 import re
 import time
-import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import requests
-import streamlit as st
-from bs4 import BeautifulSoup
-from dotenv import find_dotenv, load_dotenv
-from firecrawl import FirecrawlApp
-from langchain.chains import LLMChain
-from langchain_community.document_loaders import UnstructuredURLLoader
-from langchain_core.callbacks import FileCallbackHandler
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain_text_splitters import CharacterTextSplitter, TokenTextSplitter
+from langchain_text_splitters import TokenTextSplitter
 from loguru import logger
 
 from config import settings
 
 
 class SearchService:
-    # A dictionary containing configuration options for the speech service, such as the model and voice to use.
     _config = {
         "search_model": "gpt-4o",
         "search_temperature": 0.5,
@@ -50,6 +40,15 @@ class SearchService:
         """,
         "summarize_chunk_size": 32000,
         "summarize_chunk_overlap": 500,
+        "crawler_parameters": {
+            "crawlerOptions": {
+                "excludes": ["blog/*"],
+                "maxDepth": 2,
+                "includes": [],
+                "limit": 1,
+            },
+            "pageOptions": {"onlyMainContent": False},
+        },
     }
 
     @staticmethod
@@ -65,6 +64,8 @@ class SearchService:
         text = re.sub(r"<a.*?>|</a>", "", text)
         text = re.sub(r"\*+", "", text)
         text = re.sub(r"#", "", text)
+        text = re.sub(r"-", "", text)
+        text = re.sub(r"\\", "", text)
         text = re.sub(
             r"\b\w+\.(jpg|jpeg|png|gif|bmp|pdf|doc|docx|xls|xlsx|ppt|pptx|webp)\b",
             "",
@@ -80,7 +81,7 @@ class SearchService:
         try:
             response = requests.get(url, stream=True)
             if response.status_code == 200:
-                logger.info(f"{url} - is Valid.")
+                logger.info(f"{url} - IS VALID.")
                 return True
             else:
                 logger.error(f"{url} - IS NOT VALID.")
@@ -92,9 +93,47 @@ class SearchService:
             return False
 
     @staticmethod
-    def get_content_from_urls(
+    def _get_content_from_urls(
         urls: List[str], timeout: int = 0.5, jobs_limit: int = 3
-    ) -> List[str]:
+    ) -> Tuple[List[str], List[List[str]]]:
+
+        def _check_job(
+            jobId: str,
+            all_data: List[str],
+            all_source_urls: List[List[str]],
+            timeout: int,
+        ) -> bool:
+            api = f"https://api.firecrawl.dev/v0/crawl/status/{jobId}"
+            headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_API}"}
+            response = requests.request("GET", api, headers=headers)
+
+            if response.status_code == 200:
+                response_json = response.json()
+                status = response_json["status"]
+                if status == "completed":
+                    data = []
+                    source_urls = []
+                    if type(response_json["data"]) is list:
+                        for result in response_json["data"]:
+                            source_urls.append(result["metadata"]["sourceURL"])
+                            data.append(result["markdown"])
+                        data = "\n".join(data)
+                        data = SearchService._clean_text(data)
+                        logger.info(f"Job with id {jobId} data:\n{data}")
+                        logger.info(f"Job with id {jobId} source URLs:\n{source_urls}")
+                        all_data.append(data)
+                        all_source_urls.append(source_urls)
+                    else:
+                        logger.error(
+                            f'Crawl job ended with error: {response_json["data"]["error"]}'
+                        )
+                    return True
+                elif status in ["active", "paused", "pending", "queued"]:
+                    time.sleep(timeout)
+                    return False
+                else:
+                    logger.error(f"Crawl job failed or was stopped. Status: {status}")
+                    return True
 
         all_data = []
         all_source_urls = []
@@ -105,20 +144,27 @@ class SearchService:
         for url in urls:
             if not SearchService._check_if_valid(url):
                 continue
-            crawl_job_id = app.crawl_url(
-                url, params=crawl_params, wait_until_done=False
+
+            crawl_job_id = settings._firecrawl_app.crawl_url(
+                url,
+                params=SearchService._config["crawler_parameters"],
+                wait_until_done=False,
             )
+
             jobs.add(crawl_job_id["jobId"])
+
             while len(jobs) == jobs_limit:
                 for jobId in jobs:
-                    if check_job(jobId, all_data, all_source_urls, timeout):
+                    if _check_job(jobId, all_data, all_source_urls, timeout):
                         jobs_to_remove.add(jobId)
                 jobs = jobs.difference(jobs_to_remove)
+
         while len(jobs) > 0:
             for jobId in jobs:
-                if check_job(jobId, all_data, all_source_urls, timeout):
+                if _check_job(jobId, all_data, all_source_urls, timeout):
                     jobs_to_remove.add(jobId)
             jobs = jobs.difference(jobs_to_remove)
+
         return all_data, all_source_urls
 
     @classmethod
@@ -154,12 +200,13 @@ class SearchService:
         return urls
 
     @classmethod
-    def summarize_content(cls, url: str) -> str:
+    def summarize_content(cls, url: str) -> Tuple[str, List[List[str]]]:
         llm = ChatOpenAI(
             openai_api_key=settings.OPENAI_KEY,
             model_name=cls._config["summarize_prompt_model"],
             temperature=cls._config["summarize_prompt_temperature"],
         )
+
         prompt = PromptTemplate.from_template(cls._config["summarize_prompt_template"])
         chain = prompt | llm | StrOutputParser()
 
@@ -169,13 +216,14 @@ class SearchService:
         )
 
         summary_text = ""
+        source_texts, source_urls = SearchService._get_content_from_urls([url])
 
-        for d in data:
-            texts = text_splitter.split_text(d)
-            for text in texts:
+        for text in source_texts:
+            chunks = text_splitter.split_text(text)
+            for chunk in chunks:
                 summary_text = chain.invoke(
-                    {"summary_text": summary_text, "text": text, "url": url}
+                    {"summary_text": summary_text, "text": chunk, "url": url}
                 )
-                logger.info(f"summary_text:\n\n{summary_text}\n\n")
+                logger.info(f"Summary text:\n{summary_text}\n")
 
-        return summary_text
+        return summary_text, source_urls
