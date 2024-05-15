@@ -25,13 +25,13 @@ async def cmd_start(message: Message, state: FSMContext):
     - None
     """
 
-    thread_id = await AssistantService.create_thread(message.from_user.id)
+    thread = await AssistantService.create_thread(message.from_user.id)
     await state.set_state(ThreadIdState.thread_id)
     await state.storage.set_data(
         key=StorageKey(
             bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
         ),
-        data={"thread_id": thread_id},
+        data={"thread_id": thread.id},
     )
 
     await message.reply(Strings.HELLO_MSG)
