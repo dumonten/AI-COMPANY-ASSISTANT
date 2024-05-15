@@ -104,7 +104,7 @@ class SearchService:
             timeout: int,
         ) -> bool:
             api = f"https://api.firecrawl.dev/v0/crawl/status/{jobId}"
-            headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_API}"}
+            headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_KEY}"}
             response = requests.request("GET", api, headers=headers)
 
             if response.status_code == 200:
@@ -145,7 +145,7 @@ class SearchService:
             if not SearchService._check_if_valid(url):
                 continue
 
-            crawl_job_id = settings._firecrawl_app.crawl_url(
+            crawl_job_id = settings.firecrawl_app.crawl_url(
                 url,
                 params=SearchService._config["crawler_parameters"],
                 wait_until_done=False,

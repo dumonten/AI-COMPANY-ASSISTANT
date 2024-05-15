@@ -1,17 +1,27 @@
+from typing import Any, List
+
 from loguru import logger
 from openai import AsyncOpenAI
+
+from config import settings
 
 
 class VectorStore:
     def __init__(self):
-        self.name = ""
-        self.instructions = ""
-        self.vector_store = None
-        self.file_batch = None
-        self.file_paths = []
-        self._async_client = None
+        self.name: str = ""
+        self.instructions: str = ""
+        self.vector_store: Any = None
+        self.file_batch: Any = None
+        self.file_paths: List[str] = []
+        self._async_client: AsyncOpenAI = None
 
-    async def initialization(self, name, file_paths, instructions, async_client):
+    async def initialization(
+        self,
+        name: str,
+        file_paths: List[str],
+        instructions: str,
+        async_client: AsyncOpenAI,
+    ) -> None:
         self.name = name
         self.file_paths = file_paths
         self.instructions = instructions

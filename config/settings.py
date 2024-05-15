@@ -2,10 +2,10 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from aiogram import Bot
+from firecrawl import FirecrawlApp
 from openai import AsyncOpenAI
 from pydantic import Field
 from pydantic_settings import BaseSettings
-from firecrawl import FirecrawlApp
 
 
 class Settings(BaseSettings):
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
 
         if not hasattr(self, "_firecrawl_app"):
             self._firecrawl_app = FirecrawlApp(api_key=self.FIRE_CRAWL_KEY)
-        return self._thread_executor
+        return self._firecrawl_app
 
     class Config:
         """

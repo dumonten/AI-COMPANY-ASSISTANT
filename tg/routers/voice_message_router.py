@@ -10,14 +10,14 @@ from loguru import logger
 
 from config import settings
 from services import AssistantService, SttService, TtsService
-from tg.states import ThreadIdState
+from tg.states import ActivatedState
 from utils import Strings
 
 router = Router()
 bot = settings.bot
 
 
-@router.message(ThreadIdState.thread_id, F.voice)
+@router.message(ActivatedState.activated, F.voice)
 async def voice_message(message: Message, state: FSMContext):
     """
     Handles voice messages by downloading the voice message, converting it to text with the SttService,
