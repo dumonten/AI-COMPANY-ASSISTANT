@@ -7,4 +7,5 @@ class ActivatedState(StatesGroup):
     process information related to a specific thread ID.
     """
 
+    wait_url = State()
     activated = State()
