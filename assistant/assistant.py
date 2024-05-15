@@ -4,6 +4,7 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from config import settings
+from utils.functions import generate_uuid
 
 from .vector_store import VectorStore
 
@@ -34,18 +35,17 @@ class Assistant:
         self._vector_storages: List[VectorStore] = []
         self._config: Dict[str, str] = self._base_config.copy()
 
-        self.id: str = ""
         self.company_name: str = ""
         self.company_url: str = ""
 
     async def initialize(
-        self, company_name: str, company_url: str, data_file_paths: List[str]
+        self, async_client: AsyncOpenAI, company_name: str, company_url: str, data_file_paths: List[str]
     ) -> None:
-        self._async_client = settings.async_client
+        self._async_client = async_client
         self.company_name = company_name
         self.company_url = company_url
 
-        self._config["assistant_instructions"].format(
+        self._config["assistant_instructions"] = self._config["assistant_instructions"].format(
             company_name=self.company_name, company_url=self.company_url
         )
 
@@ -64,7 +64,17 @@ class Assistant:
                 instructions="""
                     В случае, если вы не можете дать ответ из своего контекста на запрос пользователя на тему компании,  
                     попробуйте поискать ответ в данных файлах.
-                """
+                """, 
+                async_client=self._async_client
+            )
+
+            self._assistant = (
+            await self._async_client.beta.assistants.update(
+                assistant_id=self._assistant.id,
+                tool_resources={
+                    "file_search": {"vector_store_ids": [store.vector_store.id]}
+                },
+            )
             )
 
             self._vector_storages.append(store)
@@ -75,20 +85,20 @@ class Assistant:
         except ValueError as ve:
             logger.error(f"Error in store initialization in assistant: {ve}")
 
-    async def request(cls, thread_id: str, prompt: str) -> str:
-        if cls._async_client is None:
+    async def request(self, thread_id: str, prompt: str) -> str:
+        if self._async_client is None:
             raise ValueError(
                 "async_client must be initialized before calling speech_to_text."
             )
 
-        user_message = await cls._async_client.beta.threads.messages.create(
+        user_message = await self._async_client.beta.threads.messages.create(
             thread_id=thread_id, role="user", content=prompt
         )
 
-        run = await cls._async_client.beta.threads.runs.create_and_poll(
+        run = await self._async_client.beta.threads.runs.create_and_poll(
             thread_id=thread_id,
-            assistant_id=cls._assistant.id,
-            instructions=cls._config["run_instructions"],
+            assistant_id=self._assistant.id,
+            instructions=self._config["run_instructions"],
         )
 
         if run.status == "requires_action":
@@ -116,12 +126,12 @@ class Assistant:
                     )
 
                 """
-                run = await cls._async_client.beta.threads.runs.submit_tool_outputs_and_poll(
+                run = await self._async_client.beta.threads.runs.submit_tool_outputs_and_poll(
                     thread_id=thread_id, run_id=run.id, tool_outputs=tool_outputs
                 )
 
         if run.status == "completed":
-            messages = await cls._async_client.beta.threads.messages.list(
+            messages = await self._async_client.beta.threads.messages.list(
                 thread_id=thread_id
             )
 
@@ -131,7 +141,7 @@ class Assistant:
                 annotations = message_content.annotations
                 for index, annotation in enumerate(annotations):
                     if file_citation := getattr(annotation, "file_citation", None):
-                        cited_file = await cls._async_client.files.retrieve(
+                        cited_file = await self._async_client.files.retrieve(
                             file_citation.file_id
                         )
                         citations.append(cited_file.filename)
@@ -146,6 +156,8 @@ class Assistant:
         else:
             raise ValueError(f'Run status is not <completed>, it\'s "{run.status}".')
 
+    async def get_id(self): 
+        return self._assistant.id  
 
 
 
