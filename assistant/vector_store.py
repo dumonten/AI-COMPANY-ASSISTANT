@@ -13,22 +13,28 @@ class VectorStore:
         self.vector_store: Any = None
         self.file_batch: Any = None
         self.file_paths: List[str] = []
+        self._async_client: AsyncOpenAI = None
 
     async def initialization(
-        self, name: str, file_paths: List[str], instructions: str
+        self,
+        name: str,
+        file_paths: List[str],
+        instructions: str,
+        async_client: AsyncOpenAI,
     ) -> None:
         self.name = name
         self.file_paths = file_paths
         self.instructions = instructions
+        self._async_client = async_client
 
-        self.vector_store = await settings.async_client.beta.vector_stores.create(
+        self.vector_store = await self._async_client.beta.vector_stores.create(
             name=self.name
         )
 
         file_streams = [open(path, "rb") for path in self.file_paths]
 
         self.file_batch = (
-            await settings.async_client.beta.vector_stores.file_batches.upload_and_poll(
+            await self._async_client.beta.vector_stores.file_batches.upload_and_poll(
                 vector_store_id=self.vector_store.id, files=file_streams
             )
         )

@@ -9,14 +9,14 @@ from loguru import logger
 
 from config import settings
 from services import AssistantService, TtsService
-from tg.states import ThreadIdState
+from tg.states import ActivatedState
 from utils import Strings
 
 router = Router()
 bot = settings.bot
 
 
-@router.message(ThreadIdState.thread_id, F.text)
+@router.message(ActivatedState.activated, F.text)
 async def text_message(message: Message, state: FSMContext):
     """
     Handles text messages by sending a wait message to the user, processing the text with the AssistantService,
@@ -41,11 +41,12 @@ async def text_message(message: Message, state: FSMContext):
         )
 
         response = await AssistantService.request(
-            message.from_user.id, data["thread_id"], message.text
+            data["thread_id"], message.text, data["assistant_id"]
         )
 
         await message.answer(response)
 
+        """
         try:
             response_audio_file_path = await TtsService.text_to_speech(response)
             response = FSInputFile(response_audio_file_path)
@@ -56,5 +57,6 @@ async def text_message(message: Message, state: FSMContext):
             )
         finally:
             os.remove(response_audio_file_path)
+        """
     except Exception as e:
         logger.error(f"Error in text_message_router: {e}")
