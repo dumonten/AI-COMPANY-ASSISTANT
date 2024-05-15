@@ -19,7 +19,7 @@ from langchain_openai import ChatOpenAI
 from langchain_text_splitters import CharacterTextSplitter, TokenTextSplitter
 from loguru import logger
 
-from config import settingscc
+from config import settings
 
 
 class SearchService:
@@ -154,7 +154,7 @@ class SearchService:
         return urls
 
     @classmethod
-    def summarize_content(cls, data: str, url: str) -> str:
+    def summarize_content(cls, url: str) -> str:
         llm = ChatOpenAI(
             openai_api_key=settings.OPENAI_KEY,
             model_name=cls._config["summarize_prompt_model"],

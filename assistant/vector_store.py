@@ -1,30 +1,34 @@
+from typing import Any, List
+
 from loguru import logger
 from openai import AsyncOpenAI
+
+from config import settings
 
 
 class VectorStore:
     def __init__(self):
-        self.name = ""
-        self.instructions = ""
-        self.vector_store = None
-        self.file_batch = None
-        self.file_paths = []
-        self._async_client = None
+        self.name: str = ""
+        self.instructions: str = ""
+        self.vector_store: Any = None
+        self.file_batch: Any = None
+        self.file_paths: List[str] = []
 
-    async def initialization(self, name, file_paths, instructions, async_client):
+    async def initialization(
+        self, name: str, file_paths: List[str], instructions: str
+    ) -> None:
         self.name = name
         self.file_paths = file_paths
         self.instructions = instructions
-        self._async_client = async_client
 
-        self.vector_store = await self._async_client.beta.vector_stores.create(
+        self.vector_store = await settings.async_client.beta.vector_stores.create(
             name=self.name
         )
 
         file_streams = [open(path, "rb") for path in self.file_paths]
 
         self.file_batch = (
-            await self._async_client.beta.vector_stores.file_batches.upload_and_poll(
+            await settings.async_client.beta.vector_stores.file_batches.upload_and_poll(
                 vector_store_id=self.vector_store.id, files=file_streams
             )
         )

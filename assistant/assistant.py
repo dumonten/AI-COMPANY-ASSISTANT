@@ -1,106 +1,81 @@
-import json
-import os
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 from openai import AsyncOpenAI
 
-from repositories import UserRepository
-from utils import Strings
+from config import settings
 
-"""
-Надо сделать AssistantService -> он будет получать от юзера url по которому нужно создать ассистента 
-Далее он создет assistant. У assistant будет файл с конфигурацией. Как класс. Он будет содержать strings 
-запросов. То есть полный config и тулы весь набор бойца. 
-
-У самого ассистента будет векторная БД (надо вынести в отдельный класс), которую он будет использовать.
-Там будут лежать данные из их веб страниц. 
-
-"""
+from .vector_store import VectorStore
 
 
 class Assistant:
-    _config = {
-        "name": "Voice AI Assistant",
+    _base_config = {
+        "name": "AiCompanyAssistant",
         "model": "gpt-3.5-turbo",
-        "assistant_instructions": (
-            "You should {URL} in a conversation with the user to understand their personal values, "
-            "beliefs, and what they {name_comapny} important in life. You should ask open-ended questions "
-            "to encourage the user to share their thoughts and feelings. The goal is to gather insights "
-            "into the user's core values, which  include aspects such as family, career, personal growth, "
-            "health, and {}. You should listen carefully to the user's responses and use them to identify "
-            "patterns or recurring themes that reflect the user's life values."
-        ),
+        "assistant_instructions": """
+            В качестве ассистента в компании {company_name},
+            вы выполняете роль менеджера чата на нашем веб-сайте {company_url}. 
+            Ваша основная задача - обслуживать пользователей, предоставляя им точную информацию 
+            о нашей компании и её продуктах/услугах. Вы должны адекватно реагировать на вопросы, 
+            связанные с деятельностью компании, и корректно отказываться от обсуждения несвязанных тем. 
+            Важно поддерживать позитивный тон разговора, стараясь понять потребности клиента и предлагая ему помощь. 
+            Эффективность вашей работы напрямую влияет на впечатление от взаимодействия с компанией и может 
+            стать решающим фактором в принятии решения о сотрудничестве.
+        """,
         "run_instructions": "",
         "tools": [
             {"type": "file_search"},
-            {
-                "type": "function",
-                "function": {
-                    "name": "save_values",
-                    "description": (
-                        "Get the key {name_comapny} values of the user."
-                        "After you determine the basic values of the user, call this function."
-                    ),
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "key_values": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": (
-                                    "An array of strings representing the user's identified key life values."
-                                    "Each string in the array should be a single value that the user has "
-                                    "identified as important to their life. Record the values in English."
-                                ),
-                            }
-                        },
-                        "required": ["key_values"],
-                    },
-                },
-            },
         ],
     }
 
     def __init__(self):
-        self._async_client = None
-        self._assistant = None
-        self._vector_storages = []
+        self._async_client: Optional[AsyncOpenAI] = None
+        self._assistant: Optional[Any] = None  
+        self._vector_storages: List[VectorStore] = []
+        self._config: Dict[str, str] = self._base_config.copy()
 
-        self.name_company = ""
-        self.url = ""
+        self.id: str = ""
+        self.company_name: str = ""
+        self.company_url: str = ""
 
+    async def initialize(
+        self, company_name: str, company_url: str, data_file_paths: List[str]
+    ) -> None:
+        self._async_client = settings.async_client
+        self.company_name = company_name
+        self.company_url = company_url
 
-"""
-    async def initialize(cls, async_client: AsyncOpenAI):
-        cls._async_client = async_client
+        self._config["assistant_instructions"].format(
+            company_name=self.company_name, company_url=self.company_url
+        )
 
-        cls._assistant = await cls._async_client.beta.assistants.create(
-            name=cls._config["name"],
-            instructions=cls._config["assistant_instructions"],
-            model=cls._config["model"],
-            tools=cls._config["tools"],
+        self._assistant = await self._async_client.beta.assistants.create(
+            name=self._config["name"],
+            instructions=self._config["assistant_instructions"],
+            model=self._config["model"],
+            tools=self._config["tools"],
         )
 
         try:
-            anxiety_storage = cls.AssistantServiceVectorStorage()
-            await anxiety_storage.initialization(
-                name="Statements about Anxiety",
-                file_paths=[".//.//Anxiety.docx"],
-                instructions="If the user asks a question on the topic of Anxiety, try to look for the answer in the files.",
+            store = VectorStore()
+            await store.initialization(
+                name=f"Данные о компании {self.company_name}.",
+                file_paths=data_file_paths,
+                instructions="""
+                    В случае, если вы не можете дать ответ из своего контекста на запрос пользователя на тему компании,  
+                    попробуйте поискать ответ в данных файлах.
+                """
             )
-            cls._vector_storages.append(anxiety_storage)
+
+            self._vector_storages.append(store)
+
+            self._config["run_instructions"] += "\n".join(
+                [vs.instructions for vs in self._vector_storages]
+            )
         except ValueError as ve:
-            logger.info(f"Error: {ve}")
+            logger.error(f"Error in store initialization in assistant: {ve}")
 
-        cls._config["run_instructions"] += "\n".join(
-            [vs.instructions for vs in cls._vector_storages]
-        )
-
-    async def create_thread(cls, user_id: int) -> str:
-        thread = await cls._async_client.beta.threads.create()
-        return thread.id
-
-    async def request(cls, user_id: int, thread_id: str, prompt: str) -> str:
+    async def request(cls, thread_id: str, prompt: str) -> str:
         if cls._async_client is None:
             raise ValueError(
                 "async_client must be initialized before calling speech_to_text."
@@ -119,7 +94,8 @@ class Assistant:
         if run.status == "requires_action":
             tool_outputs = []
             for tool in run.required_action.submit_tool_outputs.tool_calls:
-                if tool.function.name == "save_values":
+                """
+                 if tool.function.name == "save_values":
                     is_saved = await cls.save_values(
                         user_id=user_id,
                         key_values=", ".join(
@@ -139,6 +115,7 @@ class Assistant:
                         }
                     )
 
+                """
                 run = await cls._async_client.beta.threads.runs.submit_tool_outputs_and_poll(
                     thread_id=thread_id, run_id=run.id, tool_outputs=tool_outputs
                 )
@@ -169,35 +146,6 @@ class Assistant:
         else:
             raise ValueError(f'Run status is not <completed>, it\'s "{run.status}".')
 
-    async def save_values(cls, user_id: int, key_values: str) -> bool:
-    
-        AnalyticsService.track_event(
-            user_id=user_id, event_type=EventType.KeyValueRevealed
-        )
 
-        logger.info(
-            f"Detected user key values: user_id[{user_id}] key_values[{key_values}]"
-        )
 
-        is_correct = await ValidateService.validate_key_values(key_values)
 
-        if is_correct:
-            user_repo = UserRepository()
-            try:
-                await user_repo.update_user_values(
-                    user_id=user_id, key_values=key_values
-                )
-                logger.info(f"Key values for user_id[{user_id}] updated successfully")
-            except ValueError as ve:
-                try:
-                    # If the user does not exist, save the user's values as a new record
-                    await user_repo.save_user_values(
-                        user_id=user_id, key_values=key_values
-                    )
-                    logger.info(f"Key values for user_id[{user_id}] saved successfully")
-                except ValueError as ve:
-                    logger.info(
-                        f"Error in database while saving  user_id[{user_id}] key_vaues: {ve}"
-                    )
-        return is_correct
-    """
