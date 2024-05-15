@@ -9,13 +9,13 @@ class TtsService:
     """
 
     # A dictionary containing configuration options for the speech service, such as the model and voice to use.
-    config = {
+    _config = {
         "model": "tts-1",
         "voice": "nova",
     }
 
     # An OpenAI client for making requests to the speech service.
-    async_client = None
+    _async_client = None
 
     @classmethod
     def initialize(cls, async_client: AsyncOpenAI):
@@ -29,7 +29,7 @@ class TtsService:
         - None
         """
 
-        cls.async_client = async_client
+        cls._async_client = async_client
 
     @classmethod
     async def text_to_speech(cls, text: str) -> str:
@@ -46,14 +46,14 @@ class TtsService:
         - ValueError: If the async_client is not initialized before calling this method.
         """
 
-        if cls.async_client is None:
+        if cls._async_client is None:
             raise ValueError(
                 "async_client must be initialized before calling speech_to_text."
             )
 
         path_to_file = str(uuid.uuid4()) + ".mp3"
-        async with cls.async_client.audio.speech.with_streaming_response.create(
-            model=cls.config["model"], voice=cls.config["voice"], input=text
+        async with cls._async_client.audio.speech.with_streaming_response.create(
+            model=cls._config["model"], voice=cls._config["voice"], input=text
         ) as model:
             await model.stream_to_file(path_to_file)
         return path_to_file
