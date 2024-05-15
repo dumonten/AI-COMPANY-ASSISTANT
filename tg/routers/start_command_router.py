@@ -4,9 +4,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import Message
 
-from analytics.types import EventType
 from config import settings
-from services import AnalyticsService, AssistantService
+from services import AssistantService
 from tg.states import ThreadIdState
 from utils import Strings
 
@@ -25,10 +24,6 @@ async def cmd_start(message: Message, state: FSMContext):
     Returns:
     - None
     """
-
-    AnalyticsService.track_event(
-        user_id=message.from_user.id, event_type=EventType.StartCommand
-    )
 
     thread_id = await AssistantService.create_thread(message.from_user.id)
     await state.set_state(ThreadIdState.thread_id)

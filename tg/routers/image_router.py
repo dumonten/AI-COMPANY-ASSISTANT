@@ -8,9 +8,8 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import FSInputFile, Message
 from loguru import logger
 
-from analytics.types import EventType
 from config import settings
-from services import AnalyticsService, AssistantService, EmotionService, TtsService
+from services import AssistantService, TtsService
 from tg.states import ThreadIdState
 from utils import Strings
 
@@ -30,10 +29,6 @@ async def image(message: Message, state: FSMContext):
     Returns:
     - None
     """
-
-    AnalyticsService.track_event(
-        user_id=message.from_user.id, event_type=EventType.ImageSent
-    )
 
     await message.answer(Strings.WAIT_MSG)
 

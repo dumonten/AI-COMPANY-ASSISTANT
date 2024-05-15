@@ -5,16 +5,9 @@ from aiogram import Dispatcher
 from loguru import logger
 
 from config import settings
-from services import (
-    AssistantService,
-    EmotionService,
-    SttService,
-    TtsService,
-    ValidateService,
-)
+from services import AssistantService, SttService, TtsService
 from tg.routers import (
     clear_command_router,
-    get_sources_router,
     help_command_router,
     image_router,
     start_command_router,
@@ -39,13 +32,10 @@ async def main():
 
     # Initialize services with the async client.
     await AssistantService.initialize(async_client=async_client)
-    ValidateService.initialize(async_client=async_client)
     SttService.initialize(async_client=async_client)
     TtsService.initialize(async_client=async_client)
-    EmotionService.initialize(async_client=async_client)
 
     # Include routers for handling different types of messages and commands.
-    dp.include_router(get_sources_router)
     dp.include_router(start_command_router)
     dp.include_router(help_command_router)
     dp.include_router(clear_command_router)
