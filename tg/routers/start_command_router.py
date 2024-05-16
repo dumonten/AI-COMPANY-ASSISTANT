@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import Message
 from aiogram.utils.deep_linking import decode_payload
+from loguru import logger
 
 from config import settings
 from services import AssistantService
@@ -31,7 +32,14 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         return
     else:
         name, url = decode_payload(command.args).split("%#@")
-        assistant = await AssistantService.get_assistant(name, url)
+
+        try:
+            assistant = await AssistantService.get_assistant(name, url)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            await message.answer("Поломочка!")
+            return
+
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)
