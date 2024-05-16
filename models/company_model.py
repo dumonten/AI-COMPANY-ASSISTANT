@@ -16,3 +16,13 @@ class CompanyModel(Base):
     web_site_summary_data = Column(String)
 
     assistant_id = Column(String, unique=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "company_name": self.company_name,
+            "company_url": self.company_url,
+            "web_site_raw_data": self.web_site_raw_data,
+            "web_site_summary_data": self.web_site_summary_data,
+            "assistant_id": self.assistant_id,
+        }

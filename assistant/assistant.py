@@ -12,7 +12,7 @@ from .vector_store import VectorStore
 class Assistant:
     _base_config = {
         "name": "AiCompanyAssistant",
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o",
         "assistant_instructions": """
             В качестве ассистента в компании {company_name},
             вы выполняете роль менеджера чата на нашем веб-сайте {company_url}. 
