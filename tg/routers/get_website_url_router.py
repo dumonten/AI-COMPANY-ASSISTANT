@@ -51,7 +51,6 @@ async def cmd_help(message: Message, state: FSMContext):
         link = await create_start_link(
             bot, f"{data['company_name']}%#@{reply}", encode=True
         )
-
         await message.answer(f"{Strings.ASSISTANT_CREATED} {link}")
     else:
         await message.answer(reply)
