@@ -12,6 +12,7 @@ from config import settings
 from services import AssistantService
 from tg.states import ActivatedState
 from utils import Strings
+from utils.functions import check_url
 
 router = Router()
 bot = settings.bot
@@ -28,37 +29,21 @@ async def cmd_help(message: Message, state: FSMContext):
     Returns:
     - None
     """
+    status, reply = check_url(message.text)
+    if status:
+        await message.answer(Strings.ASSISTANT_CREATING)
+        assistant = await AssistantService.get_assistant(None, "Аскона", reply)
+        thread = await AssistantService.create_thread(message.from_user.id)
 
-    url_pattern = re.compile(
-        r"((http|https)://(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(/|/\w+)*(\?\S+)?)"
-    )
-    match = url_pattern.search(message.text)
-    if not match:
-        await message.answer(Strings.NO_URL)
-        return
-    url = match.group(0)
-    url = url.strip()
-    parsed_url = urlparse(url)
-    if not parsed_url.scheme or not parsed_url.netloc:
-        await message.answer(Strings.URL_INVALID)
-        return
-    try:
-        response = requests.head(url, allow_redirects=True, timeout=5)
-        if response.status_code == 200:
-            assistant = await AssistantService.get_assistant(None, "Аскона", url)
-            thread = await AssistantService.create_thread(message.from_user.id)
+        await state.set_state(ActivatedState.activated)
+        await state.storage.set_data(
+            key=StorageKey(
+                bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
+            ),
+            data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
+        )
 
-            await state.set_state(ActivatedState.activated)
-            await state.storage.set_data(
-                key=StorageKey(
-                    bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
-                ),
-                data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
-            )
-
-            link = await create_start_link(bot, await assistant.get_id(), encode=True)
-            await message.answer(f"{Strings.ASSISTANT_CREATED} {link}")
-        else:
-            await message.answer(Strings.URL_CONNECTION_ERROR)
-    except requests.RequestException:
-        await message.answer(Strings.URL_CONNECTION_ERROR)
+        link = await create_start_link(bot, await assistant.get_id(), encode=True)
+        await message.answer(f"{Strings.ASSISTANT_CREATED} {link}")
+    else:
+        await message.answer(reply)
