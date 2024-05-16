@@ -38,7 +38,7 @@ class SearchService:
             Новая информация с сайта:
             {text}
         """,
-        "summarize_chunk_size": 32000,
+        "summarize_chunk_size": 48000,
         "summarize_chunk_overlap": 500,
         "crawler_parameters": {
             "crawlerOptions": {
