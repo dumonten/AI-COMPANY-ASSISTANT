@@ -14,6 +14,8 @@ def generate_uuid():
 
 
 def check_url(url):
+    if url is None:
+        return False, Strings.NO_URL
     url_pattern = re.compile(
         r"((http|https)://(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(/|/\w+)*(\?\S+)?)"
     )
