@@ -5,7 +5,7 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from assistant import Assistant
-from repositories import UserRepository
+from repositories import CompanyRepository
 from utils import Strings
 
 from .search_service import SearchService

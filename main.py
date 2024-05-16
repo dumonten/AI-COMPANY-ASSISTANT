@@ -5,6 +5,8 @@ from aiogram import Dispatcher
 from loguru import logger
 
 from config import settings
+from models import CompanyModel
+from repositories import CompanyRepository
 from services import AssistantService, SttService, TtsService
 from tg.routers import (
     clear_command_router,
