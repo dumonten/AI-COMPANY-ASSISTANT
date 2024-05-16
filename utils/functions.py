@@ -32,3 +32,12 @@ def check_url(url):
             return False, Strings.URL_CONNECTION_ERROR
     except requests.RequestException:
         return False, Strings.URL_CONNECTION_ERROR
+
+
+def validate_company_name(name):
+    name = name.strip()
+    if len(name) < 2 or len(name) > 100:
+        return False, Strings.SHORT_NAME
+    if not re.match(r"^[a-zA-Zа-яА-ЯёЁ0-9\s\-\'\"`«»]+$", name):
+        return (False, Strings.BAD_NAME)
+    return True, name
