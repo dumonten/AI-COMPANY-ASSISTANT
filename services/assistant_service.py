@@ -67,6 +67,11 @@ class AssistantService:
             )
             company_data.web_site_raw_data = raw_data[0]
 
+        if len(raw_data) == 0:
+            raise Exception(
+                f"Error occured while getting info from company ({company_name}) data: {e}."
+            )
+
         # Обновление "summary" данных сайта
         summary_text = company_data.web_site_summary_data
         if summary_text == None:
@@ -74,6 +79,11 @@ class AssistantService:
                 await SearchService.summarize_content(
                     company_url, source_texts=raw_data
                 )
+            )
+
+        if len(summary_text) == 0:
+            raise Exception(
+                f"Error occured while summarizing data from company ({company_name}) data: {e}."
             )
 
         try:
@@ -94,10 +104,10 @@ class AssistantService:
 
             await CompanyRepository.update_by_company(company_instance=company_data)
         except Exception as e:
-            logger.error(
+            raise Exception(
                 f"Error occured while creating assistant for {company_name}: {e}."
             )
-            assistant = None
+
         finally:
             os.remove(file_path)
 
