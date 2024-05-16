@@ -32,18 +32,18 @@ class CompanyRepository:
                 await session.commit()
 
     @classmethod
-    async def update(cls, company_instance: CompanyModel):
+    async def update_by_company(cls, company_instance: CompanyModel):
         async with async_session() as session:
             async with session.begin():
                 await session.execute(
                     update(cls.model)
                     .where(cls.model.id == company_instance.id)
-                    .values(**vars(company_instance))
+                    .values(**company_instance.to_dict())
                 )
                 await session.commit()
 
     @classmethod
-    async def update(cls, id, company_info):
+    async def update_by_info(cls, id, company_info):
         async with async_session() as session:
             async with session.begin():
                 await session.execute(
