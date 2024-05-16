@@ -8,6 +8,7 @@ from config import settings
 from services import AssistantService, SttService, TtsService
 from tg.routers import (
     clear_command_router,
+    get_website_url_router,
     help_command_router,
     start_command_router,
     text_message_router,
@@ -40,6 +41,7 @@ async def main():
     dp.include_router(clear_command_router)
     dp.include_router(text_message_router)
     dp.include_router(voice_message_router)
+    dp.include_router(get_website_url_router)
 
     logger.info("Bot started")
 

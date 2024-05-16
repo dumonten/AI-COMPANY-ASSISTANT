@@ -23,7 +23,7 @@ class AssistantService:
     async def get_assistant(
         cls, assistant_id: str, company_name: str, company_url: str
     ) -> Assistant:
-        file_path = "./summary.txt"
+        file_path = "./summaries/ascona.txt"
 
         """
         if assistant_id in cls._assistants:
