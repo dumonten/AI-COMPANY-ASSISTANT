@@ -12,14 +12,6 @@ from utils.functions import generate_uuid
 
 from .search_service import SearchService
 
-"""
-Получается, что я получаю через UI url и name. 
-Проверить по url, если такой в БД чувак. 
-Если нет - Дальше заношу его в БД. Если да - наверное обновлю имя компании (если пришло не пустое). 
-Если могу - достаю id,  если нет - создаю бота. 
-Нужна проверка при извлечении, что данные на месте (типа raw_data_url)
-"""
-
 
 class AssistantService:
     _assistants = {}
@@ -31,6 +23,7 @@ class AssistantService:
 
     @classmethod
     async def get_assistant(cls, company_name: str, company_url: str) -> Assistant:
+
         # В данном блоке идет попытка получения данных о компании из БД
         try:
             # Получение по url объекта company_data
@@ -48,9 +41,10 @@ class AssistantService:
                 )
             else:
                 # Обновление названия компании, если оно предоставлено и длиннее одного символа
-                await CompanyRepository.update(
+                await CompanyRepository.update_by_info(
                     company_data.id, {"company_name": company_name}
                 )
+                company_data.company_name = company_name
         except Exception as e:
             raise Exception(
                 f"Error occured while accessing to company ({company_name}) data: {e}."
@@ -68,22 +62,24 @@ class AssistantService:
         # Обновление "сырых" данных сайта
         raw_data = company_data.web_site_raw_data
         if raw_data == None:
-            company_data.web_site_raw_data, search_urls = (
-                SearchService.get_content_from_urls([company_url])
+            raw_data, search_urls = await SearchService.get_content_from_urls(
+                [company_url]
             )
-            raw_data = company_data.web_site_raw_data
+            company_data.web_site_raw_data = raw_data[0]
 
         # Обновление "summary" данных сайта
         summary_text = company_data.web_site_summary_data
         if summary_text == None:
             summary_text = company_data.web_site_summary_data = (
-                SearchService.summarize_content(company_url, source_texts=[raw_data])
+                await SearchService.summarize_content(
+                    company_url, source_texts=raw_data
+                )
             )
 
         try:
-            file_path = f"./~temp_files/{company_name}_{generate_uuid()}.txt"
+            file_path = f"./temp_files/{company_name}_{generate_uuid()}.txt"
 
-            with open(file_path, "w") as file:
+            with open(file_path, "w+") as file:
                 file.write(summary_text)
 
             assistant = Assistant()
@@ -94,11 +90,13 @@ class AssistantService:
                 data_file_paths=[file_path],
             )
             cls._assistants[await assistant.get_id()] = assistant
-            company_data.assistant_id = assistant.get_id()
+            company_data.assistant_id = await assistant.get_id()
 
-            await CompanyRepository.update(company_instance=company_data)
+            await CompanyRepository.update_by_company(company_instance=company_data)
         except Exception as e:
-            logger.error(f"Error occured while creating assistant for {company_name}.")
+            logger.error(
+                f"Error occured while creating assistant for {company_name}: {e}."
+            )
             assistant = None
         finally:
             os.remove(file_path)

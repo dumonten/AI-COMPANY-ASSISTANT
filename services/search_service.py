@@ -52,7 +52,7 @@ class SearchService:
     }
 
     @staticmethod
-    def _clean_text(text: str) -> str:
+    async def _clean_text(text: str) -> str:
         text = re.sub(r"<[^>]+>", "", text)
         text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
         text = re.sub(r"!\[.*\]\(.*\)", "", text)
@@ -77,7 +77,7 @@ class SearchService:
         return text
 
     @staticmethod
-    def _check_if_valid(url: str) -> bool:
+    async def _check_if_valid(url: str) -> bool:
         try:
             response = requests.get(url, stream=True)
             if response.status_code == 200:
@@ -93,11 +93,11 @@ class SearchService:
             return False
 
     @staticmethod
-    def get_content_from_urls(
+    async def get_content_from_urls(
         urls: List[str], timeout: int = 0.5, jobs_limit: int = 3
     ) -> Tuple[List[str], List[List[str]]]:
 
-        def _check_job(
+        async def _check_job(
             jobId: str,
             all_data: List[str],
             all_source_urls: List[List[str]],
@@ -118,7 +118,7 @@ class SearchService:
                             source_urls.append(result["metadata"]["sourceURL"])
                             data.append(result["markdown"])
                         data = "\n".join(data)
-                        data = SearchService._clean_text(data)
+                        data = await SearchService._clean_text(data)
                         logger.info(f"Job with id {jobId} data:\n{data}")
                         logger.info(f"Job with id {jobId} source URLs:\n{source_urls}")
                         all_data.append(data)
@@ -142,7 +142,7 @@ class SearchService:
         jobs_to_remove = set()
 
         for url in urls:
-            if not SearchService._check_if_valid(url):
+            if not await SearchService._check_if_valid(url):
                 continue
 
             crawl_job_id = settings.firecrawl_app.crawl_url(
@@ -155,22 +155,22 @@ class SearchService:
 
             while len(jobs) == jobs_limit:
                 for jobId in jobs:
-                    if _check_job(jobId, all_data, all_source_urls, timeout):
+                    if await _check_job(jobId, all_data, all_source_urls, timeout):
                         jobs_to_remove.add(jobId)
                 jobs = jobs.difference(jobs_to_remove)
 
         while len(jobs) > 0:
             for jobId in jobs:
-                if _check_job(jobId, all_data, all_source_urls, timeout):
+                if await _check_job(jobId, all_data, all_source_urls, timeout):
                     jobs_to_remove.add(jobId)
             jobs = jobs.difference(jobs_to_remove)
 
         return all_data, all_source_urls
 
     @classmethod
-    def search_articles(cls, query: str, articles_count: int) -> List[str]:
+    async def search_articles(cls, query: str, articles_count: int) -> List[str]:
 
-        def _find_best_article_urls(
+        async def _find_best_article_urls(
             response_json: Dict[str, Any], query: str, articles_count: int
         ) -> List[Dict[str, str]]:
             llm = ChatOpenAI(
@@ -195,13 +195,13 @@ class SearchService:
         headers = {"X-API-KEY": settings.SER_KEY, "Content-Type": "application/json"}
         response = requests.request("POST", url, headers=headers, data=payload)
 
-        urls = _find_best_article_urls(response, query, articles_count)
+        urls = await _find_best_article_urls(response, query, articles_count)
 
         return urls
 
     @classmethod
-    def summarize_content(cls, url: str, source_texts: str) -> str:
-        if source_texts == None:
+    async def summarize_content(cls, url: str, source_texts: List[str]) -> str:
+        if source_texts is None:
             return None
 
         llm = ChatOpenAI(
