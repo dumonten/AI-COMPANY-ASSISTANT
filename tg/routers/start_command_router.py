@@ -26,8 +26,8 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
     - None
     """
     if command.args is None:
-        await state.set_state(ActivatedState.wait_url)
-        await message.answer(Strings.WAIT_URL_MSG)
+        await state.set_state(ActivatedState.wait_name)
+        await message.answer(Strings.WAIT_NAME_MSG)
         return
     else:
         assistant_id = decode_payload(command.args)

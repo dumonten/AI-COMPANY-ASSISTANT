@@ -31,8 +31,15 @@ async def cmd_help(message: Message, state: FSMContext):
     """
     status, reply = check_url(message.text)
     if status:
+        data = await state.storage.get_data(
+            key=StorageKey(
+                bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
+            )
+        )
         await message.answer(Strings.ASSISTANT_CREATING)
-        assistant = await AssistantService.get_assistant(None, "Аскона", reply)
+        assistant = await AssistantService.get_assistant(
+            None, data["company_name"], reply
+        )
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)
