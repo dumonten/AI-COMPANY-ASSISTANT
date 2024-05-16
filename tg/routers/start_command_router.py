@@ -26,14 +26,12 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
     - None
     """
     if command.args is None:
-        await state.set_state(ActivatedState.wait_url)
-        await message.answer(Strings.WAIT_URL_MSG)
+        await state.set_state(ActivatedState.wait_name)
+        await message.answer(Strings.WAIT_NAME_MSG)
         return
     else:
-        assistant_id = decode_payload(command.args)
-        assistant = await AssistantService.get_assistant(
-            assistant_id, "Аскона", "https://askona.by/"
-        )
+        name, url = decode_payload(command.args).split("%#@")
+        assistant = await AssistantService.get_assistant(name, url)
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)
