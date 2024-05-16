@@ -31,6 +31,7 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         return
     else:
         name, url = decode_payload(command.args).split("%#@")
+        await message.answer("Ваш ассистент загружается. Пожалуйста, подождите.")
         assistant = await AssistantService.get_assistant(name, url)
         thread = await AssistantService.create_thread(message.from_user.id)
 
@@ -43,3 +44,9 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         )
 
         await message.answer("Ваш ассистент активирован!")
+
+        response = await AssistantService.request(
+            thread.id, "Привет, коротко представься.", await assistant.get_id()
+        )
+
+        await message.answer(response)

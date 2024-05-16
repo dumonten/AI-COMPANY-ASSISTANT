@@ -113,7 +113,10 @@ class SearchService:
                 if status == "completed":
                     data = []
                     source_urls = []
-                    if type(response_json["data"]) is list:
+                    if (
+                        type(response_json["data"]) is list
+                        and len(response_json["data"]) > 0
+                    ):
                         for result in response_json["data"]:
                             source_urls.append(result["metadata"]["sourceURL"])
                             data.append(result["markdown"])
@@ -124,9 +127,12 @@ class SearchService:
                         all_data.append(data)
                         all_source_urls.append(source_urls)
                     else:
-                        logger.error(
-                            f'Crawl job ended with error: {response_json["data"]["error"]}'
-                        )
+                        if len(response_json["data"]) == 0:
+                            logger.error(f"Crawl job ended with empty data")
+                        else:
+                            logger.error(
+                                f'Crawl job ended with error: {response_json["data"]["error"]}'
+                            )
                     return True
                 elif status in ["active", "paused", "pending", "queued"]:
                     time.sleep(timeout)
