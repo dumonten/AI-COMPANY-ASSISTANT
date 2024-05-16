@@ -93,7 +93,7 @@ class SearchService:
             return False
 
     @staticmethod
-    def _get_content_from_urls(
+    def get_content_from_urls(
         urls: List[str], timeout: int = 0.5, jobs_limit: int = 3
     ) -> Tuple[List[str], List[List[str]]]:
 
@@ -200,7 +200,10 @@ class SearchService:
         return urls
 
     @classmethod
-    def summarize_content(cls, url: str) -> Tuple[str, List[List[str]]]:
+    def summarize_content(cls, url: str, source_texts: str) -> str:
+        if source_texts == None:
+            return None
+
         llm = ChatOpenAI(
             openai_api_key=settings.OPENAI_KEY,
             model_name=cls._config["summarize_prompt_model"],
@@ -216,8 +219,6 @@ class SearchService:
         )
 
         summary_text = ""
-        source_texts, source_urls = SearchService._get_content_from_urls([url])
-
         for text in source_texts:
             chunks = text_splitter.split_text(text)
             for chunk in chunks:
@@ -226,4 +227,4 @@ class SearchService:
                 )
                 logger.info(f"Summary text:\n{summary_text}\n")
 
-        return summary_text, source_urls
+        return summary_text

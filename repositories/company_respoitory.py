@@ -32,6 +32,17 @@ class CompanyRepository:
                 await session.commit()
 
     @classmethod
+    async def update(cls, company_instance: CompanyModel):
+        async with async_session() as session:
+            async with session.begin():
+                await session.execute(
+                    update(cls.model)
+                    .where(cls.model.id == company_instance.id)
+                    .values(**vars(company_instance))
+                )
+                await session.commit()
+
+    @classmethod
     async def update(cls, id, company_info):
         async with async_session() as session:
             async with session.begin():
@@ -58,3 +69,11 @@ class CompanyRepository:
         async with async_session() as session:
             result = await session.execute(select(cls.model))
             return result.scalars().all()
+
+    @classmethod
+    async def get_by_company_url(cls, company_url):
+        async with async_session() as session:
+            result = await session.execute(
+                select(cls.model).where(cls.model.company_url == company_url)
+            )
+            return result.scalars().first()
