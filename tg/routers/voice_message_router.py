@@ -49,7 +49,7 @@ async def voice_message(message: Message, state: FSMContext):
         )
 
         response = await AssistantService.request(
-            message.from_user.id, data["thread_id"], text
+            data["thread_id"], message.text, data["assistant_id"]
         )
 
         await message.answer(response)
