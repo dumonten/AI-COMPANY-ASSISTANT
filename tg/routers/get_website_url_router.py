@@ -37,7 +37,9 @@ async def cmd_help(message: Message, state: FSMContext):
             )
         )
         await message.answer(Strings.ASSISTANT_CREATING_MSG)
-        assistant = await AssistantService.get_assistant(data["company_name"], reply)
+        assistant = await AssistantService.get_assistant(
+            None, data["company_name"], reply
+        )
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)
@@ -48,9 +50,7 @@ async def cmd_help(message: Message, state: FSMContext):
             data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
         )
 
-        link = await create_start_link(
-            bot, f"{data['company_name']}%#@{reply}", encode=True
-        )
+        link = await create_start_link(bot, f"{await assistant.get_id()}", encode=True)
         await message.answer(f"{Strings.ASSISTANT_CREATED_MSG} {link}")
     else:
         await message.answer(reply)

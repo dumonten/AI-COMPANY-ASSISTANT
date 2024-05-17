@@ -34,3 +34,5 @@ class Strings:
     ASSISTANT_ACTIVATED_MSG = "Ваш ассистент активирован!"
 
     ASSISTANT_IS_LOADING_MSG = "Ваш ассистент загружается. Пожалуйста, подождите."
+
+    ASSISTANT_IS_DEAD = "Ассистент не сумел создаться."
