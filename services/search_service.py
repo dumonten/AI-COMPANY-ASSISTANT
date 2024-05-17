@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import requests
 from langchain_core.output_parsers import StrOutputParser
@@ -79,33 +79,33 @@ class SearchService:
     @staticmethod
     async def _check_if_valid(url: str) -> bool:
         try:
-            response = requests.get(url, stream=True)
+            response: Optional[requests.Response] = requests.get(url, stream=True)
             if response.status_code == 200:
-                logger.info(f"{url} - IS VALID.")
+                logger.info(f"{url}: url is valid.")
                 return True
             else:
-                logger.error(f"{url} - IS NOT VALID.")
+                logger.error(f"{url}: url is notvalid.")
                 return False
         except requests.exceptions.RequestException as e:
             logger.error(
-                f"{url} - IS NOT VALID. Error occured while accessing to web site: {e}."
+                f"{url}: url is notvalid. Error occurred while accessing the website: {e}."
             )
             return False
 
     @staticmethod
     async def get_content_from_urls(
-        urls: List[str], timeout: int = 0.5, jobs_limit: int = 3
+        urls: List[str], timeout: float = 0.5, jobs_limit: int = 3
     ) -> Tuple[List[str], List[List[str]]]:
 
         async def _check_job(
             jobId: str,
             all_data: List[str],
             all_source_urls: List[List[str]],
-            timeout: int,
+            timeout: float,
         ) -> bool:
             api = f"https://api.firecrawl.dev/v0/crawl/status/{jobId}"
             headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_KEY}"}
-            response = requests.request("GET", api, headers=headers)
+            response: requests.Response = requests.request("GET", api, headers=headers)
 
             if response.status_code == 200:
                 response_json = response.json()
@@ -114,7 +114,7 @@ class SearchService:
                     data = []
                     source_urls = []
                     if (
-                        type(response_json["data"]) is list
+                        isinstance(response_json["data"], list)
                         and len(response_json["data"]) > 0
                     ):
                         for result in response_json["data"]:
@@ -140,15 +140,17 @@ class SearchService:
                 else:
                     api = f"https://api.firecrawl.dev/v0/crawl/cancel/{jobId}"
                     headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_KEY}"}
-                    response = requests.request("DELETE", api, headers=headers)
+                    response: requests.Response = requests.request(
+                        "DELETE", api, headers=headers
+                    )
                     logger.error(f"Crawl job failed or was stopped. Status: {status}")
                     return True
 
-        all_data = []
-        all_source_urls = []
+        all_data: List[str] = []
+        all_source_urls: List[List[str]] = []
 
-        jobs = set()
-        jobs_to_remove = set()
+        jobs: Set[str] = set()
+        jobs_to_remove: Set[str] = set()
 
         for url in urls:
             crawl_job_id = settings.firecrawl_app.crawl_url(
@@ -225,6 +227,7 @@ class SearchService:
         )
 
         summary_text = ""
+
         for text in source_texts:
             chunks = text_splitter.split_text(text)
             for chunk in chunks:
