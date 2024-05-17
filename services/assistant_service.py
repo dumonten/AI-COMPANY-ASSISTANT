@@ -23,38 +23,60 @@ class AssistantService:
 
     @classmethod
     async def get_assistant(
-        cls, assistant_id: str, company_name: str, company_url: str
+        cls, company_name: str, company_url: str, assistant_id: str = None
     ) -> Assistant:
-        # Если нет company_url
+
+        company_data: CompanyModel = None
+
+        # Если нет company_url, то будет попытка достать данные из бд по assistant_id
         if company_url == None:
-            if assistant_id is not None and assistant_id in cls._assistants:
-                return cls._assistants[company_data.assistant_id]
+            if assistant_id == None:
+                raise Exception(
+                    f"Can't generate bot, there are not enough information."
+                )
 
-        # В данном блоке идет попытка получения данных о компании из БД
-        try:
-            # Получение по url объекта company_data
-            company_data: CompanyModel = await CompanyRepository.get_by_company_url(
-                company_url=company_url
-            )
+            # Можно сразу извлечь
+            if assistant_id in cls._assistants:
+                return cls._assistants[assistant_id]
 
-            # Если такой компании не было в бд, то ее нужно сохранить
-            if company_data == None:
-                await CompanyRepository.insert(
-                    company_name=company_name, company_url=company_url
+            # В данном блоке идет попытка получения данных о компании из БД
+            try:
+                # Получение по url объекта company_data
+                company_data: CompanyModel = (
+                    await CompanyRepository.get_by_company_assistant_id(
+                        assistant_id=assistant_id
+                    )
                 )
-                company_data = CompanyModel(
-                    company_name=company_name, company_url=company_url
+            except Exception as e:
+                raise Exception(
+                    f"Error occured while accessing to company ({company_name}) data: {e}."
                 )
-            else:
-                # Обновление названия компании, если оно предоставлено и длиннее одного символа
-                await CompanyRepository.update_by_info(
-                    company_data.id, {"company_name": company_name}
+        else:
+            # В данном блоке идет попытка получения данных о компании из БД
+            try:
+                # Получение по url объекта company_data
+                company_data: CompanyModel = await CompanyRepository.get_by_company_url(
+                    company_url=company_url
                 )
-                company_data.company_name = company_name
-        except Exception as e:
-            raise Exception(
-                f"Error occured while accessing to company ({company_name}) data: {e}."
-            )
+
+                # Если такой компании не было в бд, то ее нужно сохранить
+                if company_data == None:
+                    await CompanyRepository.insert(
+                        company_name=company_name, company_url=company_url
+                    )
+                    company_data = CompanyModel(
+                        company_name=company_name, company_url=company_url
+                    )
+                else:
+                    # Обновление названия компании, если оно предоставлено и длиннее одного символа
+                    await CompanyRepository.update_by_info(
+                        company_data.id, {"company_name": company_name}
+                    )
+                    company_data.company_name = company_name
+            except Exception as e:
+                raise Exception(
+                    f"Error occured while accessing to company ({company_name}) data: {e}."
+                )
 
         # Проверка наличия ID помощника в данной компании
         if (

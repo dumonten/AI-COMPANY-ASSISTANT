@@ -71,6 +71,14 @@ class CompanyRepository:
             return result.scalars().all()
 
     @classmethod
+    async def get_by_company_assistant_id(cls, assistant_id):
+        async with async_session() as session:
+            result = await session.execute(
+                select(cls.model).where(cls.model.assistant_id == assistant_id)
+            )
+            return result.scalars().first()
+
+    @classmethod
     async def get_by_company_url(cls, company_url):
         async with async_session() as session:
             result = await session.execute(
