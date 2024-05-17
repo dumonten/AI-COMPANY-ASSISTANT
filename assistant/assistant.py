@@ -104,39 +104,44 @@ class Assistant:
             thread_id=thread_id, role="user", content=prompt
         )
 
-        run: dict = await self._async_client.beta.threads.runs.create_and_poll(
+        run = await self._async_client.beta.threads.runs.create_and_poll(
             thread_id=thread_id,
             assistant_id=self._assistant.id,
             instructions=self._config["run_instructions"],
         )
 
-        if run["status"] == "requires_action":
-            tool_outputs: list = []
-            # Placeholder for future implementation
-            pass  # Implement logic here
+        if run.status == "requires_action":
+            tool_outputs = []
+            for tool in run.required_action.submit_tool_outputs.tool_calls:
+                run = await self._async_client.beta.threads.runs.submit_tool_outputs_and_poll(
+                    thread_id=thread_id, run_id=run.id, tool_outputs=tool_outputs
+                )
 
-        if run["status"] == "completed":
-            messages: dict = await self._async_client.beta.threads.messages.list(
+        if run.status == "completed":
+            messages = await self._async_client.beta.threads.messages.list(
                 thread_id=thread_id
             )
 
-            if messages["data"] and messages["data"][0]["role"] == "assistant":
-                message_content: dict = messages["data"][0]["content"][0]
+            if messages.data and messages.data[0].role == "assistant":
+                message_content: dict = messages.data[0].content[0].text
                 citations: list = []
-                annotations: list = message_content["annotations"]
+                annotations: list = message_content.annotations
                 for index, annotation in enumerate(annotations):
                     if file_citation := getattr(annotation, "file_citation", None):
                         cited_file: dict = await self._async_client.files.retrieve(
-                            file_citation["file_id"]
+                            file_citation.file_id
                         )
-                        citations.append(cited_file["filename"])
+                        citations.append(cited_file.filename)
                     if index < len(citations):
-                        message_content["value"] = message_content["value"].replace(
-                            annotation["text"], f" [Источник: {citations[index]}]"
+                        message_content.value = message_content.value.replace(
+                            annotation.text, f" [Источник: {citations[index]}]"
                         )
-                ans: str = message_content["value"]
+                ans: str = message_content.value
                 return ans
             else:
                 raise Exception("No assistant message found.")
         else:
             raise Exception(f'Run status is not <completed>, it\'s "{run["status"]}".')
+
+    async def get_id(self):
+        return self._assistant.id

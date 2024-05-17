@@ -62,11 +62,15 @@ class AssistantService:
 
         raw_data: Optional[List[str]] = None
         if company_data.web_site_raw_data is None:
+            company_data.web_site_summary_data = None
             raw_data, _ = await SearchService.get_content_from_urls([company_url])
             if len(raw_data) == 0:
                 raise Exception(
                     f"Error occured while getting info from company ({company_name})."
                 )
+            company_data.web_site_raw_data = raw_data[0]
+        else:
+            raw_data = company_data.web_site_raw_data
 
         summary_text: Optional[str] = None
         if company_data.web_site_summary_data is None:
@@ -79,6 +83,8 @@ class AssistantService:
                 raise Exception(
                     f"Error occured while summarizing data from company ({company_name})."
                 )
+        else:
+            summary_text = company_data.web_site_summary_data
 
         try:
             file_path: str = f"./temp_files/{generate_uuid()}.txt"
