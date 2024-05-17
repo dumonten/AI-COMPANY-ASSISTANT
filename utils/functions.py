@@ -15,31 +15,31 @@ def generate_uuid():
 
 def check_url(url):
     if url is None:
-        return False, Strings.NO_URL
+        return False, Strings.NO_URL_MSG
     url_pattern = re.compile(
         r"((http|https)://(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(/|/\w+)*(\?\S+)?)"
     )
     match = url_pattern.search(url)
     if not match:
-        return False, Strings.NO_URL
+        return False, Strings.NO_URL_MSG
     url = match.group(0).strip()
     parsed_url = urlparse(url)
     if not parsed_url.scheme or not parsed_url.netloc:
-        return False, Strings.URL_INVALID
+        return False, Strings.URL_INVALID_MSG
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
         if response.status_code == 200:
             return True, url
         else:
-            return False, Strings.URL_CONNECTION_ERROR
+            return False, Strings.URL_CONNECTION_ERROR_MSG
     except requests.RequestException:
-        return False, Strings.URL_CONNECTION_ERROR
+        return False, Strings.URL_CONNECTION_ERROR_MSG
 
 
 def validate_company_name(name):
     name = name.strip()
     if len(name) < 2 or len(name) > 100:
-        return False, Strings.SHORT_NAME
+        return False, Strings.SHORT_NAME_MSG
     if not re.match(r"^[a-zA-Zа-яА-ЯёЁ0-9\s\-\'\"`«»]+$", name):
-        return (False, Strings.BAD_NAME)
+        return (False, Strings.BAD_NAME_MSG)
     return True, name

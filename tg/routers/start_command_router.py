@@ -38,8 +38,9 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         try:
             assistant = await AssistantService.get_assistant(name, url)
         except Exception as e:
+            assistant = None
             logger.error(f"Error: {e}")
-            await message.answer("Поломочка!")
+            await message.answer()
             return
 
         thread = await AssistantService.create_thread(message.from_user.id)
@@ -52,10 +53,10 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
             data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
         )
 
-        await message.answer("Ваш ассистент активирован!")
+        await message.answer()
 
         response = await AssistantService.request(
-            thread.id, "Привет, коротко представься.", await assistant.get_id()
+            thread.id, Strings.ASSISTANT_ACTIVATED_MSG, await assistant.get_id()
         )
 
         await message.answer(response)
