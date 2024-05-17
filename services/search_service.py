@@ -151,8 +151,6 @@ class SearchService:
         jobs_to_remove = set()
 
         for url in urls:
-            if not await SearchService._check_if_valid(url):
-                continue
             crawl_job_id = settings.firecrawl_app.crawl_url(
                 url,
                 params=SearchService._config["crawler_parameters"],
