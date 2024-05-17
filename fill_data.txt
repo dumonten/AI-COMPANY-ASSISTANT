@@ -3,7 +3,7 @@
     )
 
     await CompanyRepository.insert(
-        company_name="ООО Метрология и автомотизация",
+        company_name="ООО Метрология и автоматизация",
         company_url="https://www.ma-samara.com/",
     )
 

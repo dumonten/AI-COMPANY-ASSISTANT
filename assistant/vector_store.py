@@ -31,9 +31,7 @@ class VectorStore:
         )
 
         # Local variable 'file_streams' is explicitly typed
-        file_streams: List[Tuple[bytes, str]] = [
-            (await open(path, "rb"), path) for path in self.file_paths
-        ]
+        file_streams: List[Any] = [open(path, "rb") for path in self.file_paths]
 
         self.file_batch = (
             await self._async_client.beta.vector_stores.file_batches.upload_and_poll(

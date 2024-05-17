@@ -15,17 +15,9 @@ bot = settings.bot
 
 
 @router.message(ActivatedState.wait_name)
-async def cmd_help(message: Message, state: FSMContext):
-    """
-    Handles the "/help" command by sending a help message to the user.
-
-    Parameters:
-    - message (Message): The message object received from the user.
-
-    Returns:
-    - None
-    """
+async def get_company_name(message: Message, state: FSMContext):
     status, reply = validate_company_name(message.text)
+
     if status:
         await state.set_state(ActivatedState.wait_url)
         await state.storage.set_data(
