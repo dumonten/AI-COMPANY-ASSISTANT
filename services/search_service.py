@@ -138,6 +138,9 @@ class SearchService:
                     time.sleep(timeout)
                     return False
                 else:
+                    api = f"https://api.firecrawl.dev/v0/crawl/cancel/{jobId}"
+                    headers = {"Authorization": f"Bearer {settings.FIRE_CRAWL_KEY}"}
+                    response = requests.request("DELETE", api, headers=headers)
                     logger.error(f"Crawl job failed or was stopped. Status: {status}")
                     return True
 
@@ -150,7 +153,6 @@ class SearchService:
         for url in urls:
             if not await SearchService._check_if_valid(url):
                 continue
-
             crawl_job_id = settings.firecrawl_app.crawl_url(
                 url,
                 params=SearchService._config["crawler_parameters"],
