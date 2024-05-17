@@ -17,16 +17,6 @@ bot = settings.bot
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, command: CommandObject, state: FSMContext):
-    """
-    Handles the "/start" command by sending a welcome message to the user.
-
-    Parameters:
-    - message (Message): The message object received from the user.
-
-    Returns:
-    - None
-    """
-
     if command.args is None:
         await state.set_state(ActivatedState.wait_name)
         await message.answer(Strings.WAIT_NAME_MSG)
@@ -39,7 +29,6 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         try:
             assistant = await AssistantService.get_assistant(None, None, company_id)
         except Exception as e:
-            assistant = None
             logger.error(f"Error: {e}")
             await message.answer(Strings.ASSISTANT_IS_DEAD)
             return

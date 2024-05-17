@@ -9,7 +9,6 @@ from aiogram.types import Message
 from aiogram.utils.deep_linking import create_start_link
 
 from config import settings
-from repositories import CompanyRepository
 from services import AssistantService
 from tg.states import ActivatedState
 from utils import Strings
@@ -20,16 +19,7 @@ bot = settings.bot
 
 
 @router.message(ActivatedState.wait_url)
-async def cmd_help(message: Message, state: FSMContext):
-    """
-    Handles the "/help" command by sending a help message to the user.
-
-    Parameters:
-    - message (Message): The message object received from the user.
-
-    Returns:
-    - None
-    """
+async def get_company_url(message: Message, state: FSMContext):
     status, reply = check_url(message.text)
     if status:
         data = await state.storage.get_data(
@@ -49,10 +39,9 @@ async def cmd_help(message: Message, state: FSMContext):
             data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
         )
 
-        company = await CompanyRepository.get_by_company_url(reply)
-        company_id = company.id
-
-        link = await create_start_link(bot, f"{company_id}", encode=True)
+        link = await create_start_link(
+            bot, f"{data['company_name']}%#@{reply}", encode=True
+        )
         await message.answer(f"{Strings.ASSISTANT_CREATED_MSG} {link}")
     else:
         await message.answer(reply)

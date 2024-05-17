@@ -1,13 +1,12 @@
-from typing import Any, List
+from typing import Any, List, Tuple
 
-from loguru import logger
 from openai import AsyncOpenAI
-
-from config import settings
 
 
 class VectorStore:
-    def __init__(self):
+    def __init__(
+        self,
+    ) -> None:
         self.name: str = ""
         self.instructions: str = ""
         self.vector_store: Any = None
@@ -31,7 +30,10 @@ class VectorStore:
             name=self.name
         )
 
-        file_streams = [open(path, "rb") for path in self.file_paths]
+        # Local variable 'file_streams' is explicitly typed
+        file_streams: List[Tuple[bytes, str]] = [
+            (await open(path, "rb"), path) for path in self.file_paths
+        ]
 
         self.file_batch = (
             await self._async_client.beta.vector_stores.file_batches.upload_and_poll(
