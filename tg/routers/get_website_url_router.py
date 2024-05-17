@@ -9,6 +9,7 @@ from aiogram.types import Message
 from aiogram.utils.deep_linking import create_start_link
 
 from config import settings
+from repositories import CompanyRepository
 from services import AssistantService
 from tg.states import ActivatedState
 from utils import Strings
@@ -37,9 +38,7 @@ async def cmd_help(message: Message, state: FSMContext):
             )
         )
         await message.answer(Strings.ASSISTANT_CREATING_MSG)
-        assistant = await AssistantService.get_assistant(
-            None, data["company_name"], reply
-        )
+        assistant = await AssistantService.get_assistant(data["company_name"], reply)
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)
@@ -50,7 +49,10 @@ async def cmd_help(message: Message, state: FSMContext):
             data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
         )
 
-        link = await create_start_link(bot, f"{await assistant.get_id()}", encode=True)
+        company = await CompanyRepository.get_by_company_url(reply)
+        company_id = company.id
+
+        link = await create_start_link(bot, f"{company_id}", encode=True)
         await message.answer(f"{Strings.ASSISTANT_CREATED_MSG} {link}")
     else:
         await message.answer(reply)

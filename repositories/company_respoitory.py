@@ -71,10 +71,10 @@ class CompanyRepository:
             return result.scalars().all()
 
     @classmethod
-    async def get_by_company_assistant_id(cls, assistant_id):
+    async def get_by_company_id(cls, company_id):
         async with async_session() as session:
             result = await session.execute(
-                select(cls.model).where(cls.model.assistant_id == assistant_id)
+                select(cls.model).where(cls.model.id == company_id)
             )
             return result.scalars().first()
 

@@ -23,30 +23,27 @@ class AssistantService:
 
     @classmethod
     async def get_assistant(
-        cls, company_name: str, company_url: str, assistant_id: str = None
+        cls, company_name: str, company_url: str, company_id: int = None
     ) -> Assistant:
 
         company_data: CompanyModel = None
 
         # Если нет company_url, то будет попытка достать данные из бд по assistant_id
         if company_url == None:
-            if assistant_id == None:
+            if company_id == None:
                 raise Exception(
                     f"Can't generate bot, there are not enough information."
                 )
 
-            # Можно сразу извлечь
-            if assistant_id in cls._assistants:
-                return cls._assistants[assistant_id]
-
             # В данном блоке идет попытка получения данных о компании из БД
             try:
                 # Получение по url объекта company_data
-                company_data: CompanyModel = (
-                    await CompanyRepository.get_by_company_assistant_id(
-                        assistant_id=assistant_id
-                    )
+                company_data: CompanyModel = await CompanyRepository.get_by_company_id(
+                    company_id=company_id
                 )
+
+                if company_data == None:
+                    raise Exception("No assistant with such id.")
             except Exception as e:
                 raise Exception(
                     f"Error occured while accessing to company ({company_name}) data: {e}."
