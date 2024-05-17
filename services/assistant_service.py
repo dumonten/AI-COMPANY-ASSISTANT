@@ -70,7 +70,7 @@ class AssistantService:
                 )
             company_data.web_site_raw_data = raw_data[0]
         else:
-            raw_data = company_data.web_site_raw_data
+            raw_data = [company_data.web_site_raw_data]
 
         summary_text: Optional[str] = None
         if company_data.web_site_summary_data is None:
