@@ -36,7 +36,7 @@ async def cmd_help(message: Message, state: FSMContext):
                 bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
             )
         )
-        await message.answer(Strings.ASSISTANT_CREATING)
+        await message.answer(Strings.ASSISTANT_CREATING_MSG)
         assistant = await AssistantService.get_assistant(data["company_name"], reply)
         thread = await AssistantService.create_thread(message.from_user.id)
 
@@ -51,6 +51,6 @@ async def cmd_help(message: Message, state: FSMContext):
         link = await create_start_link(
             bot, f"{data['company_name']}%#@{reply}", encode=True
         )
-        await message.answer(f"{Strings.ASSISTANT_CREATED} {link}")
+        await message.answer(f"{Strings.ASSISTANT_CREATED_MSG} {link}")
     else:
         await message.answer(reply)
