@@ -29,12 +29,14 @@ async def main():
     - None
     """
 
+    """
     companies = await CompanyRepository.get_all()
     for c in companies:
         if c.company_url is not None:
             status, error = check_url(c.company_url)
             if not status:
                 print(c.company_name, c.company_url)
+    """
 
     dp = Dispatcher()
 

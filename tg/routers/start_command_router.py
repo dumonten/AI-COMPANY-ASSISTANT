@@ -54,10 +54,10 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
             data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
         )
 
-        await message.answer()
+        await message.answer(Strings.ASSISTANT_ACTIVATED_MSG)
 
         response = await AssistantService.request(
-            thread.id, Strings.ASSISTANT_ACTIVATED_MSG, await assistant.get_id()
+            thread.id, Strings.ASSISTANT_HELLO_MSG, await assistant.get_id()
         )
 
         await message.answer(response)
