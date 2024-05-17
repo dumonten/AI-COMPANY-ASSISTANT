@@ -26,14 +26,7 @@ def check_url(url):
     parsed_url = urlparse(url)
     if not parsed_url.scheme or not parsed_url.netloc:
         return False, Strings.URL_INVALID_MSG
-    try:
-        response = requests.head(url, allow_redirects=True, timeout=5)
-        if response.status_code == 200:
-            return True, url
-        else:
-            return False, Strings.URL_CONNECTION_ERROR_MSG
-    except requests.RequestException:
-        return False, Strings.URL_CONNECTION_ERROR_MSG
+    return True, url
 
 
 def validate_company_name(name):
