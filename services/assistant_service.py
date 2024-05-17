@@ -67,7 +67,7 @@ class AssistantService:
             )
             if len(raw_data) == 0:
                 raise Exception(
-                    f"Error occured while getting info from company ({company_name}) data: {e}."
+                    f"Error occured while getting info from company ({company_name})."
                 )
             company_data.web_site_raw_data = raw_data[0]
 
