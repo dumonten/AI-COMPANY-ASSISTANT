@@ -32,16 +32,16 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         await message.answer(Strings.WAIT_NAME_MSG)
         return
     else:
-        name, url = decode_payload(command.args).split("%#@")
+        company_id = int(decode_payload(command.args))
 
         await message.answer(Strings.ASSISTANT_IS_LOADING_MSG)
 
         try:
-            assistant = await AssistantService.get_assistant(name, url)
+            assistant = await AssistantService.get_assistant(None, None, company_id)
         except Exception as e:
             assistant = None
             logger.error(f"Error: {e}")
-            await message.answer()
+            await message.answer(Strings.ASSISTANT_IS_DEAD)
             return
 
         thread = await AssistantService.create_thread(message.from_user.id)

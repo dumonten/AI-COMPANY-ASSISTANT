@@ -159,6 +159,7 @@ class Assistant:
 
     async def get_id(self): 
         return self._assistant.id  
+    
 
 
 
