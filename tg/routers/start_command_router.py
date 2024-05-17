@@ -26,6 +26,7 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
     Returns:
     - None
     """
+
     if command.args is None:
         await state.set_state(ActivatedState.wait_name)
         await message.answer(Strings.WAIT_NAME_MSG)
@@ -33,7 +34,7 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
     else:
         name, url = decode_payload(command.args).split("%#@")
 
-        await message.answer("Ваш ассистент загружается. Пожалуйста, подождите.")
+        await message.answer(Strings.ASSISTANT_IS_LOADING_MSG)
 
         try:
             assistant = await AssistantService.get_assistant(name, url)
