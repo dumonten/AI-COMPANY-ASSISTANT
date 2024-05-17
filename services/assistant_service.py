@@ -22,7 +22,13 @@ class AssistantService:
         cls._async_client = async_client
 
     @classmethod
-    async def get_assistant(cls, company_name: str, company_url: str) -> Assistant:
+    async def get_assistant(
+        cls, assistant_id: str, company_name: str, company_url: str
+    ) -> Assistant:
+        # Если нет company_url
+        if company_url == None:
+            if assistant_id is not None and assistant_id in cls._assistants:
+                return cls._assistants[company_data.assistant_id]
 
         # В данном блоке идет попытка получения данных о компании из БД
         try:
