@@ -65,12 +65,11 @@ class AssistantService:
             raw_data, search_urls = await SearchService.get_content_from_urls(
                 [company_url]
             )
+            if len(raw_data) == 0:
+                raise Exception(
+                    f"Error occured while getting info from company ({company_name}) data: {e}."
+                )
             company_data.web_site_raw_data = raw_data[0]
-
-        if len(raw_data) == 0:
-            raise Exception(
-                f"Error occured while getting info from company ({company_name}) data: {e}."
-            )
 
         # Обновление "summary" данных сайта
         summary_text = company_data.web_site_summary_data
