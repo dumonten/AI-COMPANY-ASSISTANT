@@ -32,16 +32,16 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
         await message.answer(Strings.WAIT_NAME_MSG)
         return
     else:
-        name, url = decode_payload(command.args).split("%#@")
+        assistant_id = decode_payload(command.args)
 
         await message.answer(Strings.ASSISTANT_IS_LOADING_MSG)
 
         try:
-            assistant = await AssistantService.get_assistant(name, url)
+            assistant = await AssistantService.get_assistant(assistant_id, None, None)
         except Exception as e:
             assistant = None
             logger.error(f"Error: {e}")
-            await message.answer()
+            await message.answer(Strings.ASSISTANT_IS_DEAD)
             return
 
         thread = await AssistantService.create_thread(message.from_user.id)
@@ -51,13 +51,13 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
             key=StorageKey(
                 bot_id=bot.id, user_id=message.from_user.id, chat_id=message.chat.id
             ),
-            data={"thread_id": thread.id, "assistant_id": await assistant.get_id()},
+            data={"thread_id": thread.id, "assistant_id": assistant_id},
         )
 
         await message.answer(Strings.ASSISTANT_ACTIVATED_MSG)
 
         response = await AssistantService.request(
-            thread.id, Strings.ASSISTANT_HELLO_MSG, await assistant.get_id()
+            thread.id, Strings.ASSISTANT_HELLO_MSG, assistant_id
         )
 
         await message.answer(response)
