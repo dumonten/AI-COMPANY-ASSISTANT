@@ -6,12 +6,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import FSInputFile, Message
 from loguru import logger
+from telegram.constants import ParseMode
 
 from config import settings
 from services import AssistantService, TtsService
 from tg.states import ActivatedState
 from utils import Strings
 
+# Initialize the router and bot instance
 router = Router()
 bot = settings.bot
 
@@ -44,19 +46,17 @@ async def text_message(message: Message, state: FSMContext):
             data["thread_id"], message.text, data["assistant_id"]
         )
 
-        await message.answer(response)
+        await message.answer(response, parse_mode=ParseMode.MARKDOWN)
 
-        """
         try:
             response_audio_file_path = await TtsService.text_to_speech(response)
             response = FSInputFile(response_audio_file_path)
             await message.answer_voice(response)
         except Exception as e:
             logger.error(
-                f"Error in voice_message_router while converting answer to audio: {e}"
+                f"Error in text_message_router while converting answer to audio: {e}"
             )
         finally:
             os.remove(response_audio_file_path)
-        """
     except Exception as e:
         logger.error(f"Error in text_message_router: {e}")

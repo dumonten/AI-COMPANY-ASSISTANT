@@ -12,10 +12,13 @@ from loguru import logger
 
 from config import settings
 
-logger.add("loggger.log")
-
 
 class SearchService:
+    """
+    SearchService provides services for searching and summarizing content from web sources.
+    """
+
+    # A dictionary containing configuration options for the speech service, such as the model to use.
     _config = {
         "search_model": "gpt-4o",
         "search_temperature": 0.5,
@@ -56,6 +59,16 @@ class SearchService:
 
     @staticmethod
     async def _clean_text(text: str) -> str:
+        """
+        Cleans the input text by removing HTML tags, markdown syntax, and other non-text elements.
+
+        Parameters:
+        - text (str): The text to clean.
+
+        Returns:
+        str: The cleaned text.
+        """
+
         text = re.sub(r"<[^>]+>", "", text)
         text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
         text = re.sub(r"!\[.*\]\(.*\)", "", text)
@@ -83,6 +96,16 @@ class SearchService:
 
     @staticmethod
     async def _check_if_valid(url: str) -> bool:
+        """
+        Checks if a given URL is valid by attempting to access it and verifying the HTTP status code.
+
+        Parameters:
+        - url (str): The URL to check.
+
+        Returns:
+        bool: True if the URL is valid, False otherwise.
+        """
+
         try:
             response: Optional[requests.Response] = requests.get(url, stream=True)
             if response.status_code == 200:
@@ -101,6 +124,17 @@ class SearchService:
     async def get_content_from_urls(
         urls: List[str], timeout: float = 0.5, jobs_limit: int = 3
     ) -> Tuple[List[str], List[List[str]]]:
+        """
+        Asynchronously fetches content from multiple URLs using FireCrawl API, processes the content, and returns it.
+
+        Parameters:
+        - urls (List[str]): A list of URLs to fetch content from.
+        - timeout (float, optional): Timeout value for checking job status. Defaults to 0.5.
+        - jobs_limit (int, optional): Maximum number of concurrent jobs. Defaults to 3.
+
+        Returns:
+        Tuple[List[str], List[List[str]]]: A tuple containing a list of processed texts and a list of corresponding source URLs.
+        """
 
         async def _check_job(
             jobId: str,
@@ -119,7 +153,8 @@ class SearchService:
                     data = []
                     source_urls = []
                     if (
-                        isinstance(response_json["data"], list)
+                        response_json["data"] is not None
+                        and isinstance(response_json["data"], list)
                         and len(response_json["data"]) > 0
                     ):
                         for result in response_json["data"]:
@@ -132,7 +167,10 @@ class SearchService:
                         all_data.append(data)
                         all_source_urls.append(source_urls)
                     else:
-                        if len(response_json["data"]) == 0:
+                        if (
+                            response_json["data"] is None
+                            or len(response_json["data"]) == 0
+                        ):
                             logger.error(f"Crawl job ended with empty data")
                         else:
                             logger.error(
@@ -165,7 +203,6 @@ class SearchService:
             )
 
             jobs.add(crawl_job_id["jobId"])
-
             logger.info(f"Current Job Id: {crawl_job_id['jobId']}")
 
             while len(jobs) == jobs_limit:
@@ -184,6 +221,16 @@ class SearchService:
 
     @classmethod
     async def search_articles(cls, query: str, articles_count: int) -> List[str]:
+        """
+        Searches for articles related to a given query and returns the best article URLs.
+
+        Parameters:
+        - query (str): The search query.
+        - articles_count (int): The number of top articles to return.
+
+        Returns:
+        List[str]: A list of URLs to the top articles matching the query.
+        """
 
         async def _find_best_article_urls(
             response_json: Dict[str, Any], query: str, articles_count: int
@@ -216,6 +263,17 @@ class SearchService:
 
     @classmethod
     async def summarize_content(cls, url: str, source_texts: List[str]) -> str:
+        """
+        Summarizes content from a given URL along with additional source texts, combining and condensing the information.
+
+        Parameters:
+        - url (str): The URL of the content to summarize.
+        - source_texts (List[str]): A list of additional source texts to include in the summary.
+
+        Returns:
+        str: The summarized content.
+        """
+
         if source_texts is None:
             return None
 

@@ -7,12 +7,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import FSInputFile, Message
 from loguru import logger
+from telegram.constants import ParseMode
 
 from config import settings
 from services import AssistantService, SttService, TtsService
 from tg.states import ActivatedState
 from utils import Strings
 
+# Initialize the router and bot instance
 router = Router()
 bot = settings.bot
 
@@ -49,10 +51,10 @@ async def voice_message(message: Message, state: FSMContext):
         )
 
         response = await AssistantService.request(
-            data["thread_id"], message.text, data["assistant_id"]
+            data["thread_id"], text, data["assistant_id"]
         )
 
-        await message.answer(response)
+        await message.answer(response, parse_mode=ParseMode.MARKDOWN)
 
         try:
             response_audio_file_path = await TtsService.text_to_speech(response)

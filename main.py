@@ -5,7 +5,6 @@ from aiogram import Dispatcher
 from loguru import logger
 
 from config import settings
-from repositories import CompanyRepository
 from services import AssistantService, SttService, TtsService
 from tg.routers import (
     get_company_name_router,
@@ -15,7 +14,6 @@ from tg.routers import (
     text_message_router,
     voice_message_router,
 )
-from utils.functions import check_url
 
 
 async def main():

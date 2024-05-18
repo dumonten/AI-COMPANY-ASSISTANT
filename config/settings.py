@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from aiogram import Bot
 from firecrawl import FirecrawlApp
+from loguru import logger
 from openai import AsyncOpenAI
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -82,3 +83,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+logger.add("loggger.log")
