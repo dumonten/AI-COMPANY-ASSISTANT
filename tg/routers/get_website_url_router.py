@@ -7,9 +7,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import Message
 from aiogram.utils.deep_linking import create_start_link
+from loguru import logger
 
 from config import settings
-from repositories import CompanyRepository
+from repositories.company_respoitory import CompanyRepository
 from services import AssistantService
 from tg.states import ActivatedState
 from utils import Strings
@@ -20,16 +21,7 @@ bot = settings.bot
 
 
 @router.message(ActivatedState.wait_url)
-async def cmd_help(message: Message, state: FSMContext):
-    """
-    Handles the "/help" command by sending a help message to the user.
-
-    Parameters:
-    - message (Message): The message object received from the user.
-
-    Returns:
-    - None
-    """
+async def get_company_url(message: Message, state: FSMContext):
     status, reply = check_url(message.text)
     if status:
         data = await state.storage.get_data(
@@ -38,7 +30,15 @@ async def cmd_help(message: Message, state: FSMContext):
             )
         )
         await message.answer(Strings.ASSISTANT_CREATING_MSG)
-        assistant = await AssistantService.get_assistant(data["company_name"], reply)
+        try:
+            assistant = await AssistantService.get_assistant(
+                data["company_name"], reply
+            )
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            await message.answer(Strings.ASSISTANT_IS_DEAD)
+            return
+
         thread = await AssistantService.create_thread(message.from_user.id)
 
         await state.set_state(ActivatedState.activated)

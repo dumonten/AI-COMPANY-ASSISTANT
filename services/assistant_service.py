@@ -1,118 +1,93 @@
-import json
 import os
+from typing import Any, Dict, List, Optional
 
-from loguru import logger
 from openai import AsyncOpenAI
 
 from assistant import Assistant
 from models import CompanyModel
 from repositories import CompanyRepository
-from utils import Strings
 from utils.functions import generate_uuid
 
 from .search_service import SearchService
 
 
 class AssistantService:
-    _assistants = {}
-    _async_client = None
+    _assistants: Dict[int, Assistant] = {}
+    _async_client: Optional[AsyncOpenAI] = None
 
     @classmethod
-    def initialize(cls, async_client: AsyncOpenAI):
+    def initialize(cls, async_client: AsyncOpenAI) -> None:
         cls._async_client = async_client
 
     @classmethod
     async def get_assistant(
-        cls, company_name: str, company_url: str, company_id: int = None
+        cls, company_name: str, company_url: str, company_id: Optional[int] = None
     ) -> Assistant:
 
-        company_data: CompanyModel = None
+        company_data: Optional[CompanyModel] = None
 
-        # Если нет company_url, то будет попытка достать данные из бд по assistant_id
-        if company_url == None:
-            if company_id == None:
-                raise Exception(
-                    f"Can't generate bot, there are not enough information."
-                )
+        if company_url is None:
 
-            # В данном блоке идет попытка получения данных о компании из БД
-            try:
-                # Получение по url объекта company_data
-                company_data: CompanyModel = await CompanyRepository.get_by_company_id(
-                    company_id=company_id
-                )
+            if company_id is None:
+                raise Exception("Can't generate bot, there are not enough information.")
 
-                if company_data == None:
-                    raise Exception("No assistant with such id.")
-            except Exception as e:
-                raise Exception(
-                    f"Error occured while accessing to company ({company_name}) data: {e}."
-                )
+            company_data = await CompanyRepository.get_by_company_id(
+                company_id=company_id
+            )
+
+            if company_data is None:
+                raise Exception("No assistant with such id.")
         else:
-            # В данном блоке идет попытка получения данных о компании из БД
-            try:
-                # Получение по url объекта company_data
-                company_data: CompanyModel = await CompanyRepository.get_by_company_url(
-                    company_url=company_url
+            company_data = await CompanyRepository.get_by_company_url(
+                company_url=company_url
+            )
+            if company_data is None:
+                await CompanyRepository.insert(
+                    company_name=company_name, company_url=company_url
                 )
-
-                # Если такой компании не было в бд, то ее нужно сохранить
-                if company_data == None:
-                    await CompanyRepository.insert(
-                        company_name=company_name, company_url=company_url
-                    )
-                    company_data = CompanyModel(
-                        company_name=company_name, company_url=company_url
-                    )
-                else:
-                    # Обновление названия компании, если оно предоставлено и длиннее одного символа
-                    await CompanyRepository.update_by_info(
-                        company_data.id, {"company_name": company_name}
-                    )
-                    company_data.company_name = company_name
-            except Exception as e:
-                raise Exception(
-                    f"Error occured while accessing to company ({company_name}) data: {e}."
+                company_data = CompanyModel(
+                    company_name=company_name, company_url=company_url
                 )
+            else:
+                await CompanyRepository.update_by_info(
+                    company_data.id, {"company_name": company_name}
+                )
+                company_data.company_name = company_name
 
-        # Проверка наличия ID помощника в данной компании
         if (
             company_data.assistant_id is not None
             and company_data.assistant_id in cls._assistants
         ):
             return cls._assistants[company_data.assistant_id]
 
-        # Создание нового помощника, если не найден
-
-        # Обновление "сырых" данных сайта
-        raw_data = company_data.web_site_raw_data
-        if raw_data == None:
-            raw_data, search_urls = await SearchService.get_content_from_urls(
-                [company_url]
-            )
+        raw_data: Optional[List[str]] = None
+        if company_data.web_site_raw_data is None:
+            company_data.web_site_summary_data = None
+            raw_data, _ = await SearchService.get_content_from_urls([company_url])
             if len(raw_data) == 0:
                 raise Exception(
                     f"Error occured while getting info from company ({company_name})."
                 )
             company_data.web_site_raw_data = raw_data[0]
+        else:
+            raw_data = [company_data.web_site_raw_data]
 
-        # Обновление "summary" данных сайта
-        summary_text = company_data.web_site_summary_data
-        if summary_text == None:
+        summary_text: Optional[str] = None
+        if company_data.web_site_summary_data is None:
             summary_text = company_data.web_site_summary_data = (
                 await SearchService.summarize_content(
                     company_url, source_texts=raw_data
                 )
             )
-
-        if len(summary_text) == 0:
-            raise Exception(
-                f"Error occured while summarizing data from company ({company_name}) data: {e}."
-            )
+            if len(summary_text) == 0:
+                raise Exception(
+                    f"Error occured while summarizing data from company ({company_name})."
+                )
+        else:
+            summary_text = company_data.web_site_summary_data
 
         try:
-            file_path = f"./temp_files/{company_name}_{generate_uuid()}.txt"
-
+            file_path: str = f"./temp_files/{generate_uuid()}.txt"
             with open(file_path, "w+") as file:
                 file.write(summary_text)
 
@@ -127,11 +102,6 @@ class AssistantService:
             company_data.assistant_id = await assistant.get_id()
 
             await CompanyRepository.update_by_company(company_instance=company_data)
-        except Exception as e:
-            raise Exception(
-                f"Error occured while creating assistant for {company_name}: {e}."
-            )
-
         finally:
             os.remove(file_path)
 
@@ -139,14 +109,16 @@ class AssistantService:
 
     @classmethod
     async def create_thread(cls, user_id: int) -> str:
-        thread = await cls._async_client.beta.threads.create()
+        thread: Dict[str, Any] = await cls._async_client.beta.threads.create()
         return thread
 
     @classmethod
-    async def request(cls, thread_id: str, prompt: str, assistant_id):
-        if (assistant_id is None) or (assistant_id not in cls._assistants):
-            return
+    async def request(
+        cls, thread_id: str, prompt: str, assistant_id: int
+    ) -> Optional[str]:
+        if assistant_id is None or assistant_id not in cls._assistants:
+            return None
 
         assistant = cls._assistants[assistant_id]
-        ans = await assistant.request(thread_id=thread_id, prompt=prompt)
+        ans: Optional[str] = await assistant.request(thread_id=thread_id, prompt=prompt)
         return ans

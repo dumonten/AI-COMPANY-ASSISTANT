@@ -9,7 +9,6 @@ from models import CompanyModel
 from repositories import CompanyRepository
 from services import AssistantService, SttService, TtsService
 from tg.routers import (
-    clear_command_router,
     get_company_name_router,
     get_website_url_router,
     help_command_router,
@@ -51,7 +50,6 @@ async def main():
     # Include routers for handling different types of messages and commands.
     dp.include_router(start_command_router)
     dp.include_router(help_command_router)
-    dp.include_router(clear_command_router)
     dp.include_router(text_message_router)
     dp.include_router(voice_message_router)
     dp.include_router(get_company_name_router)

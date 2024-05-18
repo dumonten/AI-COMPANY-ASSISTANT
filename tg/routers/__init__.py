@@ -1,4 +1,3 @@
-from .clear_command_router import router as clear_command_router
 from .get_company_name_router import router as get_company_name_router
 from .get_website_url_router import router as get_website_url_router
 from .help_command_router import router as help_command_router
