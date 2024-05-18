@@ -41,18 +41,11 @@ class AssistantService:
             company_data = await CompanyRepository.get_by_company_url(
                 company_url=company_url
             )
+
             if company_data is None:
-                await CompanyRepository.insert(
-                    company_name=company_name, company_url=company_url
+                company_data = await CompanyRepository.insert(
+                    {"company_name": company_name, "company_url": company_url}
                 )
-                company_data = CompanyModel(
-                    company_name=company_name, company_url=company_url
-                )
-            else:
-                await CompanyRepository.update_by_info(
-                    company_data.id, {"company_name": company_name}
-                )
-                company_data.company_name = company_name
 
         if (
             company_data.assistant_id is not None
@@ -64,11 +57,16 @@ class AssistantService:
         if company_data.web_site_raw_data is None:
             company_data.web_site_summary_data = None
             raw_data, _ = await SearchService.get_content_from_urls([company_url])
-            if len(raw_data) == 0:
+            if raw_data is None or len(raw_data) == 0:
                 raise Exception(
                     f"Error occured while getting info from company ({company_name})."
                 )
             company_data.web_site_raw_data = raw_data[0]
+
+            await CompanyRepository.update_by_info(
+                company_data.id,
+                {"web_site_raw_data": str(company_data.web_site_raw_data)},
+            )
         else:
             raw_data = [company_data.web_site_raw_data]
 
@@ -79,10 +77,14 @@ class AssistantService:
                     company_url, source_texts=raw_data
                 )
             )
-            if len(summary_text) == 0:
+            if summary_text is None or len(summary_text) == 0:
                 raise Exception(
                     f"Error occured while summarizing data from company ({company_name})."
                 )
+            await CompanyRepository.update_by_info(
+                company_data.id,
+                {"web_site_summary_data": str(company_data.web_site_summary_data)},
+            )
         else:
             summary_text = company_data.web_site_summary_data
 
@@ -101,7 +103,10 @@ class AssistantService:
             cls._assistants[await assistant.get_id()] = assistant
             company_data.assistant_id = await assistant.get_id()
 
-            await CompanyRepository.update_by_company(company_instance=company_data)
+            await CompanyRepository.update_by_info(
+                company_data.id,
+                company_data.to_dict(),
+            )
         finally:
             os.remove(file_path)
 

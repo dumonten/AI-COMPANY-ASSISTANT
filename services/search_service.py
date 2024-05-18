@@ -12,6 +12,8 @@ from loguru import logger
 
 from config import settings
 
+logger.add("loggger.log")
+
 
 class SearchService:
     _config = {
@@ -46,7 +48,7 @@ class SearchService:
                 "excludes": ["blog/*"],
                 "maxDepth": 2,
                 "includes": [],
-                "limit": 1,
+                "limit": 5,
             },
             "pageOptions": {"onlyMainContent": False},
         },
@@ -65,6 +67,7 @@ class SearchService:
         text = re.sub(r"<a.*?>|</a>", "", text)
         text = re.sub(r"\*+", "", text)
         text = re.sub(r"#", "", text)
+        text = re.sub(r"=", "", text)
         text = re.sub(r"-", "", text)
         text = re.sub(r"\\", "", text)
         text = re.sub(
@@ -73,6 +76,7 @@ class SearchService:
             text,
             flags=re.IGNORECASE,
         )
+        text = re.sub(r"[\"']", "", text)
         text = re.sub(r"\s+", " ", text)
         text = text.strip()
         return text
@@ -161,6 +165,8 @@ class SearchService:
             )
 
             jobs.add(crawl_job_id["jobId"])
+
+            logger.info(f"Current Job Id: {crawl_job_id['jobId']}")
 
             while len(jobs) == jobs_limit:
                 for jobId in jobs:
