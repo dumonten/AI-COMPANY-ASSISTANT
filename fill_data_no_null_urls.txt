@@ -1,3 +1,17 @@
+INSERT INTO company (company_name, company_url) VALUES ('Онега', 'https://onega.by');
+INSERT INTO company (company_name, company_url) VALUES ('Профессиональные правовые системы', 'https://www.business-info.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Парк-животных', 'https://animal-park.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Альфа-моторс', 'https://edu.armtek.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Хьюмен Систем', 'https://www.hs.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Приорбанк', 'https://www.priorbank.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Savage', 'https://savage.ru/');
+INSERT INTO company (company_name, company_url) VALUES ('Малбери Клаб', 'https://www.mclub.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Этикет-сервис', 'https://www.eservice.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Ferico', 'https://ferico.by/');
+INSERT INTO company (company_name, company_url) VALUES ('Випилаб', 'https://vplab.com/ru');
+INSERT INTO company (company_name, company_url) VALUES ('IBA', 'https://ibagroupit.com/');
+
+
 INSERT INTO company (company_name, company_url) VALUES ('ООО Метрология и автомотизация', 'https://www.ma-samara.com/');
 INSERT INTO company (company_name, company_url) VALUES ('Техно Скай', 'https://high-tech.by/');
 INSERT INTO company (company_name, company_url) VALUES ('АлМар', 'https://almarlogistik.com/');

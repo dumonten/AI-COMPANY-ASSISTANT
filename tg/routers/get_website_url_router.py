@@ -53,6 +53,8 @@ async def get_company_url(message: Message, state: FSMContext):
         company_id = company.id
 
         link = await create_start_link(bot, f"{company_id}", encode=True)
+        await CompanyRepository.update_by_info(company_id, {"assistant_url": link})
+
         await message.answer(f"{Strings.ASSISTANT_CREATED_MSG} {link}")
     else:
         await message.answer(reply)
