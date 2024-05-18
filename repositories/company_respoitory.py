@@ -1,69 +1,148 @@
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.sql.expression import delete, update
 
 from models import CompanyModel
 from utils.repository import async_session
 
 
 class CompanyRepository:
+    """
+    CompanyRepository is a class responsible for handling operations related to the CompanyModel.
+    It provides methods for saving, updating, deleting, and retrieving company data from the database.
+    """
+
     model = CompanyModel
 
-    @classmethod
-    async def insert(cls, company_info):
+    async def insert(self, company_info):
+        """
+        Asynchronously inserts a new company into the database.
 
-        cls.model = CompanyModel(**company_info)
+        Parameters:
+        - kwargs: Keyword arguments containing the company details.
+
+        Returns:
+        - None
+        """
+
         async with async_session() as session:
             async with session.begin():
-                session.add(cls.model)
+                company = self.model(**company_info)
+                session.add(company)
                 await session.commit()
-        return cls.model
 
-    @classmethod
-    async def update_by_info(cls, id, company_info):
+        return company
+
+    async def update_by_info(self, company_id: int, company_info):
+        """
+        Asynchronously updates a company's information in the database.
+
+        Parameters:
+        - company_id (int): The unique identifier for the company to be updated.
+        - kwargs: Keyword arguments containing the new company details.
+
+        Returns:
+        - None
+        """
+
         async with async_session() as session:
             async with session.begin():
-                await session.execute(
-                    update(cls.model.__table__)
-                    .where(cls.model.id == id)
-                    .values(**company_info)
+                company = await session.execute(
+                    select(self.model).where(self.model.id == company_id)
                 )
-                await session.commit()
+                company = company.scalars().first()
+                if company:
+                    for attr, value in company_info.items():
+                        setattr(company, attr, value)
+                    await session.commit()
+                else:
+                    return None
 
-    @classmethod
-    async def delete(cls, id):
+    async def delete(self, company_id: int):
+        """
+        Asynchronously deletes a company from the database.
+
+        Parameters:
+        - company_id (int): The unique identifier for the company to be deleted.
+
+        Returns:
+        - None
+        """
+
         async with async_session() as session:
             async with session.begin():
-                await session.execute(
-                    delete(cls.model.__table__).where(cls.model.id == id)
+                company = await session.execute(
+                    select(self.model).where(self.model.id == company_id)
                 )
-                await session.commit()
+                company = company.scalars().first()
+                if company:
+                    session.delete(company)
+                    await session.commit()
+                else:
+                    return None
 
-    @classmethod
-    async def get_by_id(cls, id):
-        async with async_session() as session:
-            result = await session.execute(select(cls.model).where(cls.model.id == id))
-            return result.scalars().first()
+    async def get_by_id(self, company_id: int):
+        """
+        Asynchronously retrieves a company by its ID from the database.
 
-    @classmethod
-    async def get_all(cls):
-        async with async_session() as session:
-            result = await session.execute(select(cls.model))
-            return result.scalars().all()
+        Parameters:
+        - company_id (int): The unique identifier for the company.
 
-    @classmethod
-    async def get_by_company_id(cls, company_id):
+        Returns:
+        - dict: A dictionary representing the company's data.
+        """
+
         async with async_session() as session:
             result = await session.execute(
-                select(cls.model).where(cls.model.id == company_id)
+                select(self.model).where(self.model.id == company_id)
             )
-            return result.scalars().first()
+            company = result.scalars().first()
+            if company:
+                return company
+            else:
+                return None
 
-    @classmethod
-    async def get_by_company_url(cls, company_url):
+    async def get_all(self):
+        """
+        Asynchronously retrieves all companies from the database.
+
+        Returns:
+        - list: A list of dictionaries representing each company's data.
+        """
+
+        async with async_session() as session:
+            result = await session.execute(select(self.model))
+            companies = result.scalars().all()
+            return [company for company in companies]
+
+    async def get_by_company_id(self, company_id: int):
+        """
+        Asynchronously retrieves a company by its ID from the database.
+
+        Parameters:
+        - company_id (int): The unique identifier for the company.
+
+        Returns:
+        - dict: A dictionary representing the company's data.
+        """
+
+        return await self.get_by_id(company_id)
+
+    async def get_by_company_url(self, company_url: str):
+        """
+        Asynchronously retrieves a company by its URL from the database.
+
+        Parameters:
+        - company_url (str): The unique URL for the company.
+
+        Returns:
+        - dict: A dictionary representing the company's data.
+        """
+
         async with async_session() as session:
             result = await session.execute(
-                select(cls.model).where(cls.model.company_url == company_url)
+                select(self.model).where(self.model.company_url == company_url)
             )
-            return result.scalars().first()
+            company = result.scalars().first()
+            if company:
+                return company
+            else:
+                return None
