@@ -11,43 +11,23 @@ class CompanyRepository:
     model = CompanyModel
 
     @classmethod
-    async def insert(
-        cls,
-        company_name=None,
-        company_url=None,
-        web_site_raw_data=None,
-        web_site_summary_data=None,
-        assistant_id=None,
-    ):
-        company = CompanyModel(
-            company_name=company_name,
-            company_url=company_url,
-            web_site_raw_data=web_site_raw_data,
-            web_site_summary_data=web_site_summary_data,
-            assistant_id=assistant_id,
-        )
-        async with async_session() as session:
-            async with session.begin():
-                session.add(company)
-                await session.commit()
+    async def insert(cls, company_info):
 
-    @classmethod
-    async def update_by_company(cls, company_instance: CompanyModel):
+        cls.model = CompanyModel(**company_info)
         async with async_session() as session:
             async with session.begin():
-                await session.execute(
-                    update(cls.model)
-                    .where(cls.model.id == company_instance.id)
-                    .values(**company_instance.to_dict())
-                )
+                session.add(cls.model)
                 await session.commit()
+        return cls.model
 
     @classmethod
     async def update_by_info(cls, id, company_info):
         async with async_session() as session:
             async with session.begin():
                 await session.execute(
-                    update(cls.model).where(cls.model.id == id).values(**company_info)
+                    update(cls.model.__table__)
+                    .where(cls.model.id == id)
+                    .values(**company_info)
                 )
                 await session.commit()
 
@@ -55,7 +35,9 @@ class CompanyRepository:
     async def delete(cls, id):
         async with async_session() as session:
             async with session.begin():
-                await session.execute(delete(cls.model).where(cls.model.id == id))
+                await session.execute(
+                    delete(cls.model.__table__).where(cls.model.id == id)
+                )
                 await session.commit()
 
     @classmethod
