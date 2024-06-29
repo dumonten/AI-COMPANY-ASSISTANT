@@ -5,6 +5,7 @@ from aiogram import Dispatcher
 from loguru import logger
 
 from config import settings
+from models import CompanyModel
 from repositories import CompanyRepository
 from services import AssistantService, SttService, TtsService
 from tg.routers import (
@@ -26,7 +27,26 @@ async def main():
     Returns:
     - None
     """
+    repo = CompanyRepository()
 
+    company_data = await repo.insert(
+        {
+            "company_name": "F",
+            "company_url": "ewq",
+            "web_site_raw_data": "ss",
+            "web_site_summary_data": "s",
+        }
+    )
+    company_data.assistant_id = "dlkgf"
+    company_data.assistant_url = "fg"
+    company_data.company_name = "wwdQ"
+    company_data.company_url = "httwdwd"
+    company_data.web_site_raw_data = "wdwdsdfsfssfsfssf"
+    company_data.web_site_summary_data = "wdwdq"
+    await repo.update_by_info(company_data.id, company_data.to_dict())
+    await repo.delete(company_data.id)
+
+    """
     dp = Dispatcher()
 
     bot = settings.bot
@@ -49,6 +69,7 @@ async def main():
 
     # Start the bot's polling loop.
     await dp.start_polling(bot)
+    """
 
 
 if __name__ == "__main__":

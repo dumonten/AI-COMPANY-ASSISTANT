@@ -20,7 +20,6 @@ class CompanyModel(Base):
 
     def to_dict(self):
         return {
-            "id": self.id,
             "company_name": self.company_name,
             "company_url": self.company_url,
             "web_site_raw_data": self.web_site_raw_data,
